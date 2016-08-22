@@ -1,12 +1,13 @@
 package madek
 
 import (
+	"sync"
 	"time"
 
 	"github.com/tidwall/gjson"
 )
 
-func (c *Client) CompileSet(id string) (*Set, error) {
+func (c *Client) CompileSet(id string, loadMediaEntries bool) (*Set, error) {
 	setStr, err := c.fetch(c.url("/api/collections/%s", id))
 	if err != nil {
 		return nil, err
@@ -61,13 +62,39 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 		page++
 	}
 
-	for _, entryID := range mediaEntryIds {
-		media, err := c.CompileMediaEntry(entryID)
-		if err != nil {
-			return err
+	if loadMediaEntries {
+		var wg sync.WaitGroup
+
+		errors := make(chan error, len(mediaEntryIds))
+		mediaEntries := make(chan *MediaEntry, len(mediaEntryIds))
+
+		wg.Add(len(mediaEntryIds))
+
+		for _, entryID := range mediaEntryIds {
+			go func() {
+				defer wg.Done()
+
+				mediaEntry, err := c.CompileMediaEntry(entryID)
+				if err != nil {
+					errors <- err
+					return
+				}
+
+				mediaEntries <- mediaEntry
+			}()
 		}
 
-		set.MediaEntries = append(set.MediaEntries, media)
+		wg.Wait()
+		close(errors)
+		close(mediaEntries)
+
+		if len(errors) > 0 {
+			return nil, <-errors
+		}
+
+		for mediaEntry := range mediaEntries {
+			set.MediaEntries = append(set.MediaEntries, mediaEntry)
+		}
 	}
 
 	return set, nil
@@ -125,7 +152,7 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 			return nil, err
 		}
 
-		preview := Preview{
+		preview := &Preview{
 			ID:          previewID.Str,
 			Type:        gjson.Get(previewStr, "media_type").Str,
 			ContentType: gjson.Get(previewStr, "content_type").Str,

@@ -18,7 +18,7 @@ func main() {
 }
 
 func getSet(client *madek.Client, id string) {
-	set, err := client.CompileSet(id)
+	set, err := client.CompileSet(id, true)
 	if err != nil {
 		fmt.Printf("Error encountered: %s\n", err)
 		return

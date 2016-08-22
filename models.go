@@ -3,20 +3,20 @@ package madek
 import "time"
 
 type Set struct {
-	ID           string       `json:"id"`
-	Title        string       `json:"title"`
-	CreatedAt    time.Time    `json:"created_at"`
-	MediaEntries []MediaEntry `json:"media"`
+	ID           string        `json:"id"`
+	Title        string        `json:"title"`
+	CreatedAt    time.Time     `json:"created_at"`
+	MediaEntries []*MediaEntry `json:"media"`
 }
 
 type MediaEntry struct {
-	ID          string    `json:"id"`
-	Title       string    `json:"title"`
-	CreatedAt   time.Time `json:"created_at"`
-	FileID      string    `json:"file_id"`
-	StreamURL   string    `json:"stream_url"`
-	DownloadURL string    `json:"file_url"`
-	Previews    []Preview `json:"previews"`
+	ID          string     `json:"id"`
+	Title       string     `json:"title"`
+	CreatedAt   time.Time  `json:"created_at"`
+	FileID      string     `json:"file_id"`
+	StreamURL   string     `json:"stream_url"`
+	DownloadURL string     `json:"file_url"`
+	Previews    []*Preview `json:"previews"`
 }
 
 type Preview struct {
