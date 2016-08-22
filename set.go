@@ -24,7 +24,7 @@ type Preview struct {
 	Type        string `json:"type"`
 	ContentType string `json:"content_type"`
 	Size        string `json:"size"`
-	Width       string `json:"width"`
-	Height      string `json:"height"`
+	Width       int    `json:"width"`
+	Height      int    `json:"height"`
 	URL         string `json:"url"`
 }
