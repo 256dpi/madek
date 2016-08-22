@@ -97,7 +97,7 @@ func (c *Client) CompileSet(id string, loadMediaEntries bool) (*Set, error) {
 			go func(id string) {
 				defer wg.Done()
 
-				mediaEntry, err := c.CompileMediaEntry(id)
+				mediaEntry, err := c.compileMediaEntry(id)
 				if err != nil {
 					asyncErrors <- err
 					return
@@ -123,7 +123,7 @@ func (c *Client) CompileSet(id string, loadMediaEntries bool) (*Set, error) {
 	return set, nil
 }
 
-func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
+func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 	mediaEntryStr, err := c.fetch(c.url("/api/media-entries/%s", id))
 	if err != nil {
 		return nil, err

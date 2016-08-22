@@ -4,7 +4,8 @@ import "github.com/docopt/docopt-go"
 
 type command struct {
 	// commands
-	cSet bool
+	cFetch  bool
+	cServer bool
 
 	// arguments
 	aID string
@@ -19,7 +20,8 @@ func parseCommand() *command {
 	usage := `madek.
 
 Usage:
-  madek set <id> [options]
+  madek fetch <id> [options]
+  madek server [options]
 
 Options:
   -h --help                   Show this screen.
@@ -32,7 +34,8 @@ Options:
 
 	return &command{
 		// commands
-		cSet: getBool(a["set"]),
+		cFetch:  getBool(a["fetch"]),
+		cServer: getBool(a["server"]),
 
 		// arguments
 		aID: getString(a["<id>"]),

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/IAD-ZHDK/madek"
 )
@@ -12,12 +13,14 @@ func main() {
 
 	client := madek.NewClient(cmd.oAddress, cmd.oUsername, cmd.oPassword)
 
-	if cmd.cSet {
-		getSet(client, cmd.aID)
+	if cmd.cFetch {
+		fetch(client, cmd.aID)
+	} else if cmd.cServer {
+		server(client)
 	}
 }
 
-func getSet(client *madek.Client, id string) {
+func fetch(client *madek.Client, id string) {
 	set, err := client.CompileSet(id, true)
 	if err != nil {
 		fmt.Printf("Error encountered: %s\n", err)
@@ -30,4 +33,33 @@ func getSet(client *madek.Client, id string) {
 	}
 
 	fmt.Println(string(bytes))
+}
+
+func server(client *madek.Client) {
+	http.HandleFunc("/set.json", func(w http.ResponseWriter, r *http.Request) {
+		id := r.URL.Query().Get("id")
+		if id == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("missing id query parameter"))
+			return
+		}
+
+		set, err := client.CompileSet(id, true)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		bytes, err := json.MarshalIndent(set, "", "  ")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		w.Write(bytes)
+	})
+
+	http.ListenAndServe("0.0.0.0:8888", nil)
 }
