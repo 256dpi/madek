@@ -37,7 +37,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 				return nil, err
 			}
 
-			set.Name = gjson.Get(metaDatumStr, "value").String()
+			set.Title = gjson.Get(metaDatumStr, "value").String()
 		}
 	}
 
@@ -62,72 +62,81 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 	}
 
 	for _, entryID := range mediaEntryIds {
-		mediaEntryStr, err := c.fetch(c.url("/api/media-entries/%s", entryID))
+		media, err := c.CompileMediaEntry(entryID)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		createdAt, err := time.Parse(time.RFC3339, gjson.Get(mediaEntryStr, "created_at").String())
-		if err != nil {
-			return nil, err
-		}
+		set.MediaEntries = append(set.MediaEntries, media)
+	}
 
-		media := Media{
-			ID:        entryID,
-			CreatedAt: createdAt,
-		}
+	return set, nil
+}
 
-		metaDataStr, err := c.fetch(c.url("/api/media-entries/%s/meta-data/", entryID))
-		if err != nil {
-			return nil, err
-		}
+func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
+	mediaEntryStr, err := c.fetch(c.url("/api/media-entries/%s", id))
+	if err != nil {
+		return nil, err
+	}
 
-		metaDataKeys := gjson.Get(metaDataStr, "meta-data.#.meta_key_id").Multi
-		metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Multi
+	createdAt, err := time.Parse(time.RFC3339, gjson.Get(mediaEntryStr, "created_at").String())
+	if err != nil {
+		return nil, err
+	}
 
-		for i, key := range metaDataKeys {
-			if key.String() == "madek_core:title" {
-				metaDatumStr, err := c.fetch(c.url("/api/meta-data/%s", metaDataIds[i].String()))
-				if err != nil {
-					return nil, err
-				}
+	mediaEntry := &MediaEntry{
+		ID:        id,
+		CreatedAt: createdAt,
+	}
 
-				media.Name = gjson.Get(metaDatumStr, "value").String()
-			}
-		}
+	metaDataStr, err := c.fetch(c.url("/api/media-entries/%s/meta-data/", id))
+	if err != nil {
+		return nil, err
+	}
 
-		mediaFileStr, err := c.fetch(c.url(gjson.Get(mediaEntryStr, "_json-roa.relations.media-file.href").String()))
-		if err != nil {
-			return nil, err
-		}
+	metaDataKeys := gjson.Get(metaDataStr, "meta-data.#.meta_key_id").Multi
+	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Multi
 
-		media.FileID = gjson.Get(mediaFileStr, "id").String()
-		media.StreamURL = c.url(gjson.Get(mediaFileStr, "_json-roa.relations.data-stream.href").String())
-		media.DownloadURL = c.url("/files/%s", media.FileID)
-
-		previewIDs := gjson.Get(mediaFileStr, "previews.#.id").Multi
-
-		for _, previewID := range previewIDs {
-			previewStr, err := c.fetch(c.url("/api/previews/%s", previewID.Str))
+	for i, key := range metaDataKeys {
+		if key.String() == "madek_core:title" {
+			metaDatumStr, err := c.fetch(c.url("/api/meta-data/%s", metaDataIds[i].String()))
 			if err != nil {
 				return nil, err
 			}
 
-			preview := Preview{
-				ID:          previewID.Str,
-				Type:        gjson.Get(previewStr, "media_type").Str,
-				ContentType: gjson.Get(previewStr, "content_type").Str,
-				Size:        gjson.Get(previewStr, "thumbnail").Str,
-				Width:       int(gjson.Get(previewStr, "width").Num),
-				Height:      int(gjson.Get(previewStr, "height").Num),
-				URL:         c.url("/media/%s", previewID.Str),
-			}
-
-			media.Previews = append(media.Previews, preview)
+			mediaEntry.Title = gjson.Get(metaDatumStr, "value").String()
 		}
-
-		set.Media = append(set.Media, media)
 	}
 
-	return set, nil
+	mediaFileStr, err := c.fetch(c.url(gjson.Get(mediaEntryStr, "_json-roa.relations.media-file.href").String()))
+	if err != nil {
+		return nil, err
+	}
+
+	mediaEntry.FileID = gjson.Get(mediaFileStr, "id").String()
+	mediaEntry.StreamURL = c.url(gjson.Get(mediaFileStr, "_json-roa.relations.data-stream.href").String())
+	mediaEntry.DownloadURL = c.url("/files/%s", mediaEntry.FileID)
+
+	previewIDs := gjson.Get(mediaFileStr, "previews.#.id").Multi
+
+	for _, previewID := range previewIDs {
+		previewStr, err := c.fetch(c.url("/api/previews/%s", previewID.Str))
+		if err != nil {
+			return nil, err
+		}
+
+		preview := Preview{
+			ID:          previewID.Str,
+			Type:        gjson.Get(previewStr, "media_type").Str,
+			ContentType: gjson.Get(previewStr, "content_type").Str,
+			Size:        gjson.Get(previewStr, "thumbnail").Str,
+			Width:       int(gjson.Get(previewStr, "width").Num),
+			Height:      int(gjson.Get(previewStr, "height").Num),
+			URL:         c.url("/media/%s", previewID.Str),
+		}
+
+		mediaEntry.Previews = append(mediaEntry.Previews, preview)
+	}
+
+	return mediaEntry, nil
 }
