@@ -74,7 +74,7 @@ func server(client *madek.Client, cacheEnabled bool) {
 
 	fmt.Println("+------------------------------------------------------------+")
 	fmt.Println("| Running server on http://0.0.0.0:8080...                   |")
-	fmt.Println("| Data can requested using the following pattern:            |")
+	fmt.Println("| Load data using the following pattern:                     |")
 	fmt.Println("| > http://0.0.0.0:8080/82108639-c4a6-412d-b347-341fe5284caa |")
 	fmt.Println("+------------------------------------------------------------+")
 
