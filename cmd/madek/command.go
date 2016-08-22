@@ -14,6 +14,7 @@ type command struct {
 	oAddress  string
 	oUsername string
 	oPassword string
+	oCache    bool
 }
 
 func parseCommand() *command {
@@ -28,6 +29,7 @@ Options:
   -a --address=<url>          The address of the madek instance [default: https://medienarchiv.zhdk.ch].
   -u --username=<username>    The username used for authentication.
   -p --password=<password>    The password used for authentication.
+  -c --cache                  Cache requests in server mode.
 `
 
 	a, _ := docopt.Parse(usage, nil, true, "0.1", false)
@@ -44,6 +46,7 @@ Options:
 		oAddress:  getString(a["--address"]),
 		oUsername: getString(a["--username"]),
 		oPassword: getString(a["--password"]),
+		oCache:    getBool(a["--cache"]),
 	}
 }
 

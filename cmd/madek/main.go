@@ -8,6 +8,7 @@ import (
 
 	"github.com/IAD-ZHDK/madek"
 	"github.com/gin-gonic/gin"
+	"github.com/patrickmn/go-cache"
 )
 
 func main() {
@@ -18,7 +19,7 @@ func main() {
 	if cmd.cFetch {
 		fetch(client, cmd.aID)
 	} else if cmd.cServer {
-		server(client)
+		server(client, cmd.oCache)
 	}
 }
 
@@ -37,9 +38,11 @@ func fetch(client *madek.Client, id string) {
 	fmt.Println(string(bytes))
 }
 
-func server(client *madek.Client) {
+func server(client *madek.Client, cacheEnabled bool) {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
+
+	requestCache := cache.New(cache.NoExpiration, cache.NoExpiration)
 
 	router.GET("/:id", func(ctx *gin.Context) {
 		id := ctx.Param("id")
@@ -48,10 +51,22 @@ func server(client *madek.Client) {
 			return
 		}
 
+		if ctx.Query("fresh") != "yes" {
+			val, ok := requestCache.Get(id)
+			if ok {
+				ctx.JSON(http.StatusOK, val.(*madek.Set))
+				return
+			}
+		}
+
 		set, err := client.CompileSet(id)
 		if err != nil {
 			ctx.AbortWithError(http.StatusInternalServerError, err)
 			return
+		}
+
+		if cacheEnabled {
+			requestCache.Set(id, set, cache.NoExpiration)
 		}
 
 		ctx.JSON(http.StatusOK, set)
