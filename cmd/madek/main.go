@@ -44,7 +44,7 @@ func server(client *madek.Client) {
 			return
 		}
 
-		set, err := client.CompileSet(id, true)
+		set, err := client.CompileSet(id)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
