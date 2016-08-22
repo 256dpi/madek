@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/IAD-ZHDK/madek"
-	"github.com/kr/pretty"
 )
 
 func main() {
@@ -16,6 +18,16 @@ func main() {
 }
 
 func getSet(client *madek.Client, id string) {
-	set, err := client.GetSet(id)
-	pretty.Println(set, err)
+	set, err := client.CompileSet(id)
+	if err != nil {
+		fmt.Printf("Error encountered: %s\n", err)
+		return
+	}
+
+	bytes, err := json.MarshalIndent(set, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(bytes))
 }

@@ -1,5 +1,5 @@
-hash: f8c965339d47148badd9579bbb8dbf9286da01d455251feca9b8bc0df1a48e9e
-updated: 2016-08-22T11:39:48.671623649+02:00
+hash: d1d3153536977dc85c53d22eb1a29856c2492c85230dcdfb8955058b255084d8
+updated: 2016-08-22T11:50:22.988271216+02:00
 imports:
 - name: github.com/docopt/docopt-go
   version: 784ddc588536785e7299f7272f39101f7faccc3f
@@ -11,6 +11,8 @@ imports:
   version: b1479103caacaa39319f75e7f57fc545287fca0d
 - name: github.com/parnurzeal/gorequest
   version: b64673b971a1742b8ba91f228f1c029632d4b686
+- name: github.com/tidwall/gjson
+  version: e42a0961e6bd0f8994b47bddc3f11e93aaa04b8e
 - name: golang.org/x/net
   version: 7394c112eae4dba7e96bfcfe738e6373d61772b4
   subpackages:

@@ -1,13 +1,10 @@
 package madek
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/kr/pretty"
 	"github.com/parnurzeal/gorequest"
 )
 
@@ -31,19 +28,6 @@ func NewClient(address, username, password string) *Client {
 		Password: password,
 		agent:    gorequest.New(),
 	}
-}
-
-func (c *Client) GetSet(id string) (*Set, error) {
-	str, err := c.fetch(c.url("collections/%s", id))
-	if err != nil {
-		return nil, err
-	}
-
-	buf := new(bytes.Buffer)
-	json.Indent(buf, []byte(str), "", "  ")
-	pretty.Println(buf.String())
-
-	return &Set{}, nil
 }
 
 func (c *Client) fetch(path string) (string, error) {
