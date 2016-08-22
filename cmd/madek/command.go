@@ -23,7 +23,7 @@ Usage:
 
 Options:
   -h --help                   Show this screen.
-  -a --address=<url>          The address of the madek API [default: https://medienarchiv.zhdk.ch/api].
+  -a --address=<url>          The address of the madek instance [default: https://medienarchiv.zhdk.ch].
   -u --username=<username>    The username used for authentication.
   -p --password=<password>    The password used for authentication.
 `

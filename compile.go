@@ -7,7 +7,7 @@ import (
 )
 
 func (c *Client) CompileSet(id string) (*Set, error) {
-	setStr, err := c.fetch(c.url("collections/%s", id))
+	setStr, err := c.fetch(c.url("/api/collections/%s", id))
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +22,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 		CreatedAt: createdAt,
 	}
 
-	metaDataStr, err := c.fetch(c.url("collections/%s/meta-data/", id))
+	metaDataStr, err := c.fetch(c.url("/api/collections/%s/meta-data/", id))
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +32,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 
 	for i, key := range metaDataKeys {
 		if key.String() == "madek_core:title" {
-			metaDatumStr, err := c.fetch(c.url("meta-data/%s", metaDataIds[i].String()))
+			metaDatumStr, err := c.fetch(c.url("/api/meta-data/%s", metaDataIds[i].String()))
 			if err != nil {
 				return nil, err
 			}
@@ -45,7 +45,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 
 	var page = 0
 	for {
-		mediaEntriesStr, err := c.fetch(c.url("media-entries/?collection_id=%s&page=%d", id, page))
+		mediaEntriesStr, err := c.fetch(c.url("/api/media-entries/?collection_id=%s&page=%d", id, page))
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +62,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 	}
 
 	for _, entryID := range mediaEntryIds {
-		mediaEntryStr, err := c.fetch(c.url("media-entries/%s", entryID))
+		mediaEntryStr, err := c.fetch(c.url("/api/media-entries/%s", entryID))
 		if err != nil {
 			return nil, err
 		}
@@ -77,7 +77,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 			CreatedAt: createdAt,
 		}
 
-		metaDataStr, err := c.fetch(c.url("media-entries/%s/meta-data/", entryID))
+		metaDataStr, err := c.fetch(c.url("/api/media-entries/%s/meta-data/", entryID))
 		if err != nil {
 			return nil, err
 		}
@@ -87,13 +87,43 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 
 		for i, key := range metaDataKeys {
 			if key.String() == "madek_core:title" {
-				metaDatumStr, err := c.fetch(c.url("meta-data/%s", metaDataIds[i].String()))
+				metaDatumStr, err := c.fetch(c.url("/api/meta-data/%s", metaDataIds[i].String()))
 				if err != nil {
 					return nil, err
 				}
 
 				media.Name = gjson.Get(metaDatumStr, "value").String()
 			}
+		}
+
+		mediaFileStr, err := c.fetch(c.url(gjson.Get(mediaEntryStr, "_json-roa.relations.media-file.href").String()))
+		if err != nil {
+			return nil, err
+		}
+
+		media.FileID = gjson.Get(mediaFileStr, "id").String()
+		media.StreamURL = c.url(gjson.Get(mediaFileStr, "_json-roa.relations.data-stream.href").String())
+		media.DownloadURL = c.url("/files/%s", media.FileID)
+
+		previewIDs := gjson.Get(mediaFileStr, "previews.#.id").Multi
+
+		for _, previewID := range previewIDs {
+			previewStr, err := c.fetch(c.url("/api/previews/%s", previewID.String()))
+			if err != nil {
+				return nil, err
+			}
+
+			preview := Preview{
+				ID:          previewID.String(),
+				Type:        gjson.Get(previewStr, "media_type").String(),
+				ContentType: gjson.Get(previewStr, "content_type").String(),
+				Size:        gjson.Get(previewStr, "thumbnail").String(),
+				Width:       gjson.Get(previewStr, "width").String(),
+				Height:      gjson.Get(previewStr, "height").String(),
+				URL:         c.url("/media/%s", previewID.String()),
+			}
+
+			media.Previews = append(media.Previews, preview)
 		}
 
 		set.Media = append(set.Media, media)

@@ -31,6 +31,8 @@ func NewClient(address, username, password string) *Client {
 }
 
 func (c *Client) fetch(path string) (string, error) {
+	println(path)
+
 	res, str, err := c.agent.Get(path).
 		SetBasicAuth(c.Username, c.Password).
 		Set("Accept", "application/json-roa+json").
@@ -61,5 +63,5 @@ func (c *Client) fetch(path string) (string, error) {
 
 func (c *Client) url(format string, args ...interface{}) string {
 	args = append([]interface{}{c.Address}, args...)
-	return fmt.Sprintf("%s/"+format, args...)
+	return fmt.Sprintf("%s"+format, args...)
 }
