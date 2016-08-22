@@ -36,7 +36,7 @@ func (c *Client) CompileSet(id string, loadMediaEntries bool) (*Set, error) {
 		return nil, err
 	}
 
-	createdAt, err := time.Parse(time.RFC3339, gjson.Get(setStr, "created_at").String())
+	createdAt, err := time.Parse(time.RFC3339, gjson.Get(setStr, "created_at").Str)
 	if err != nil {
 		return nil, err
 	}
@@ -55,13 +55,13 @@ func (c *Client) CompileSet(id string, loadMediaEntries bool) (*Set, error) {
 	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Multi
 
 	for i, key := range metaDataKeys {
-		if key.String() == "madek_core:title" {
-			metaDatumStr, err := c.fetch(c.url("/api/meta-data/%s", metaDataIds[i].String()))
+		if key.Str == "madek_core:title" {
+			metaDatumStr, err := c.fetch(c.url("/api/meta-data/%s", metaDataIds[i].Str))
 			if err != nil {
 				return nil, err
 			}
 
-			set.Title = gjson.Get(metaDatumStr, "value").String()
+			set.Title = gjson.Get(metaDatumStr, "value").Str
 		}
 	}
 
@@ -129,7 +129,7 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 		return nil, err
 	}
 
-	createdAt, err := time.Parse(time.RFC3339, gjson.Get(mediaEntryStr, "created_at").String())
+	createdAt, err := time.Parse(time.RFC3339, gjson.Get(mediaEntryStr, "created_at").Str)
 	if err != nil {
 		return nil, err
 	}
@@ -148,23 +148,24 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Multi
 
 	for i, key := range metaDataKeys {
-		if key.String() == "madek_core:title" {
-			metaDatumStr, err := c.fetch(c.url("/api/meta-data/%s", metaDataIds[i].String()))
+		if key.Str == "madek_core:title" {
+			metaDatumStr, err := c.fetch(c.url("/api/meta-data/%s", metaDataIds[i].Str))
 			if err != nil {
 				return nil, err
 			}
 
-			mediaEntry.Title = gjson.Get(metaDatumStr, "value").String()
+			mediaEntry.Title = gjson.Get(metaDatumStr, "value").Str
 		}
 	}
 
-	mediaFileStr, err := c.fetch(c.url(gjson.Get(mediaEntryStr, "_json-roa.relations.media-file.href").String()))
+	mediaFileStr, err := c.fetch(c.url(gjson.Get(mediaEntryStr, "_json-roa.relations.media-file.href").Str))
 	if err != nil {
 		return nil, err
 	}
 
-	mediaEntry.FileID = gjson.Get(mediaFileStr, "id").String()
-	mediaEntry.StreamURL = c.url(gjson.Get(mediaFileStr, "_json-roa.relations.data-stream.href").String())
+	mediaEntry.FileID = gjson.Get(mediaFileStr, "id").Str
+	mediaEntry.FileName = gjson.Get(mediaFileStr, "filename").Str
+	mediaEntry.StreamURL = c.url(gjson.Get(mediaFileStr, "_json-roa.relations.data-stream.href").Str)
 	mediaEntry.DownloadURL = c.url("/files/%s", mediaEntry.FileID)
 
 	previewIDs := gjson.Get(mediaFileStr, "previews.#.id").Multi
