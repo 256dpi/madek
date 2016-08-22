@@ -17,8 +17,6 @@ type Client struct {
 	Address  string
 	Username string
 	Password string
-
-	agent *gorequest.SuperAgent
 }
 
 func NewClient(address, username, password string) *Client {
@@ -26,14 +24,13 @@ func NewClient(address, username, password string) *Client {
 		Address:  address,
 		Username: username,
 		Password: password,
-		agent:    gorequest.New(),
 	}
 }
 
 func (c *Client) fetch(path string) (string, error) {
 	println(path)
 
-	res, str, err := c.agent.Get(path).
+	res, str, err := gorequest.New().Get(path).
 		SetBasicAuth(c.Username, c.Password).
 		Set("Accept", "application/json-roa+json").
 		End()
