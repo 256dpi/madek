@@ -21,7 +21,7 @@ func main() {
 }
 
 func fetch(client *madek.Client, id string) {
-	set, err := client.CompileSet(id, true)
+	set, err := client.CompileSet(id)
 	if err != nil {
 		fmt.Printf("Error encountered: %s\n", err)
 		return

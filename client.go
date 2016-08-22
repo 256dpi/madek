@@ -11,17 +11,37 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// ErrInvalidAuthentication is returned when the supplied authentication
+// credentials have been rejected.
 var ErrInvalidAuthentication = errors.New("Invalid Authentication")
+
+// ErrAccessForbidden is returned when the requested resources is protected.
 var ErrAccessForbidden = errors.New("Access Forbidden")
+
+// ErrRequestFailed is returned when the request failed due to some error.
 var ErrRequestFailed = errors.New("Request Failed")
+
+// ErrNotFound ist returned when the requested resource ist not found.
 var ErrNotFound = errors.New("Not Found")
 
+// A RequestError ist returned on a request error and provides additional info.
+type RequestError struct {
+	Err error
+	URL string
+}
+
+func (r *RequestError) Error() string {
+	return r.Err.Error() + ": " + r.URL
+}
+
+// A Client is used to request data from the Madek API.
 type Client struct {
 	Address  string
 	Username string
 	Password string
 }
 
+// NewClient will create and return a new Client.
 func NewClient(address, username, password string) *Client {
 	return &Client{
 		Address:  address,
@@ -30,7 +50,8 @@ func NewClient(address, username, password string) *Client {
 	}
 }
 
-func (c *Client) CompileSet(id string, loadMediaEntries bool) (*Set, error) {
+// CompileSet will fully compile a set with all available data from the API.
+func (c *Client) CompileSet(id string) (*Set, error) {
 	setStr, err := c.fetch(c.url("/api/collections/%s", id))
 	if err != nil {
 		return nil, err
@@ -65,7 +86,7 @@ func (c *Client) CompileSet(id string, loadMediaEntries bool) (*Set, error) {
 		}
 	}
 
-	mediaEntryIds := make([]string, 0)
+	var mediaEntryIds []string
 
 	var page = 0
 	for {
@@ -85,39 +106,37 @@ func (c *Client) CompileSet(id string, loadMediaEntries bool) (*Set, error) {
 		page++
 	}
 
-	if loadMediaEntries {
-		var wg sync.WaitGroup
+	var wg sync.WaitGroup
 
-		asyncErrors := make(chan error, len(mediaEntryIds))
-		mediaEntries := make(chan *MediaEntry, len(mediaEntryIds))
+	asyncErrors := make(chan error, len(mediaEntryIds))
+	mediaEntries := make(chan *MediaEntry, len(mediaEntryIds))
 
-		wg.Add(len(mediaEntryIds))
+	wg.Add(len(mediaEntryIds))
 
-		for _, entryID := range mediaEntryIds {
-			go func(id string) {
-				defer wg.Done()
+	for _, entryID := range mediaEntryIds {
+		go func(id string) {
+			defer wg.Done()
 
-				mediaEntry, err := c.compileMediaEntry(id)
-				if err != nil {
-					asyncErrors <- err
-					return
-				}
+			mediaEntry, err := c.compileMediaEntry(id)
+			if err != nil {
+				asyncErrors <- err
+				return
+			}
 
-				mediaEntries <- mediaEntry
-			}(entryID)
-		}
+			mediaEntries <- mediaEntry
+		}(entryID)
+	}
 
-		wg.Wait()
-		close(asyncErrors)
-		close(mediaEntries)
+	wg.Wait()
+	close(asyncErrors)
+	close(mediaEntries)
 
-		if len(asyncErrors) > 0 {
-			return nil, <-asyncErrors
-		}
+	if len(asyncErrors) > 0 {
+		return nil, <-asyncErrors
+	}
 
-		for mediaEntry := range mediaEntries {
-			set.MediaEntries = append(set.MediaEntries, mediaEntry)
-		}
+	for mediaEntry := range mediaEntries {
+		set.MediaEntries = append(set.MediaEntries, mediaEntry)
 	}
 
 	return set, nil
@@ -201,23 +220,38 @@ func (c *Client) fetch(path string) (string, error) {
 		End()
 
 	if len(err) > 0 {
-		return "", err[0]
+		return "", &RequestError{
+			Err: err[0],
+			URL: path,
+		}
 	}
 
 	if res.StatusCode == http.StatusUnauthorized {
-		return "", ErrInvalidAuthentication
+		return "", &RequestError{
+			Err: ErrInvalidAuthentication,
+			URL: path,
+		}
 	}
 
 	if res.StatusCode == http.StatusForbidden {
-		return "", ErrAccessForbidden
+		return "", &RequestError{
+			Err: ErrAccessForbidden,
+			URL: path,
+		}
 	}
 
 	if res.StatusCode == http.StatusNotFound {
-		return "", ErrNotFound
+		return "", &RequestError{
+			Err: ErrNotFound,
+			URL: path,
+		}
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return "", ErrRequestFailed
+		return "", &RequestError{
+			Err: ErrRequestFailed,
+			URL: path,
+		}
 	}
 
 	return str, nil

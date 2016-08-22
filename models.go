@@ -2,6 +2,7 @@ package madek
 
 import "time"
 
+// A Set contains multiple media entries.
 type Set struct {
 	ID           string        `json:"id"`
 	Title        string        `json:"title"`
@@ -9,6 +10,7 @@ type Set struct {
 	MediaEntries []*MediaEntry `json:"media"`
 }
 
+// A MediaEntry containes multiple previews.
 type MediaEntry struct {
 	ID          string     `json:"id"`
 	Title       string     `json:"title"`
@@ -20,6 +22,7 @@ type MediaEntry struct {
 	Previews    []*Preview `json:"previews"`
 }
 
+// A Preview is the final accessible media.
 type Preview struct {
 	ID          string `json:"id"`
 	Type        string `json:"type"`
