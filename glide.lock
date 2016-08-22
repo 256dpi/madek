@@ -1,0 +1,18 @@
+hash: f8c965339d47148badd9579bbb8dbf9286da01d455251feca9b8bc0df1a48e9e
+updated: 2016-08-22T11:39:48.671623649+02:00
+imports:
+- name: github.com/docopt/docopt-go
+  version: 784ddc588536785e7299f7272f39101f7faccc3f
+- name: github.com/kr/pretty
+  version: 737b74a46c4bf788349f72cb256fed10aea4d0ac
+- name: github.com/kr/text
+  version: 7cafcd837844e784b526369c9bce262804aebc60
+- name: github.com/moul/http2curl
+  version: b1479103caacaa39319f75e7f57fc545287fca0d
+- name: github.com/parnurzeal/gorequest
+  version: b64673b971a1742b8ba91f228f1c029632d4b686
+- name: golang.org/x/net
+  version: 7394c112eae4dba7e96bfcfe738e6373d61772b4
+  subpackages:
+  - publicsuffix
+testImports: []

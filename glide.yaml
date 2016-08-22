@@ -1,0 +1,6 @@
+package: github.com/IAD-ZHDK/madek
+import:
+- package: github.com/docopt/docopt-go
+  version: ^0.6.2
+- package: github.com/parnurzeal/gorequest
+  version: ^0.2.13
