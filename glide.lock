@@ -1,20 +1,34 @@
-hash: d1d3153536977dc85c53d22eb1a29856c2492c85230dcdfb8955058b255084d8
-updated: 2016-08-22T11:50:22.988271216+02:00
+hash: 231b07a5a62d961b54dd855edcff05270ef952e627171f28af8f495baa16b7c4
+updated: 2016-08-22T16:41:26.50690947+02:00
 imports:
 - name: github.com/docopt/docopt-go
   version: 784ddc588536785e7299f7272f39101f7faccc3f
-- name: github.com/kr/pretty
-  version: 737b74a46c4bf788349f72cb256fed10aea4d0ac
-- name: github.com/kr/text
-  version: 7cafcd837844e784b526369c9bce262804aebc60
+- name: github.com/gin-gonic/gin
+  version: f931d1ea80ae95a6fc739213cdd9399bd2967fb6
+  subpackages:
+  - binding
+  - render
+- name: github.com/golang/protobuf
+  version: 2402d76f3d41f928c7902a765dfc872356dd3aad
+  subpackages:
+  - proto
+- name: github.com/manucorporat/sse
+  version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/moul/http2curl
   version: b1479103caacaa39319f75e7f57fc545287fca0d
 - name: github.com/parnurzeal/gorequest
   version: b64673b971a1742b8ba91f228f1c029632d4b686
+- name: github.com/patrickmn/go-cache
+  version: 1881a9bccb818787f68c52bfba648c6cf34c34fa
 - name: github.com/tidwall/gjson
-  version: e42a0961e6bd0f8994b47bddc3f11e93aaa04b8e
+  version: 696d68fd62aaaeb93fe42e898daa76ab9fbff8d1
 - name: golang.org/x/net
-  version: 7394c112eae4dba7e96bfcfe738e6373d61772b4
+  version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
   - publicsuffix
+  - context
+- name: gopkg.in/go-playground/validator.v8
+  version: c193cecd124b5cc722d7ee5538e945bdb3348435
+- name: gopkg.in/yaml.v2
+  version: e4d366fc3c7938e2958e662b4258c7a89e1f0e3e
 testImports: []

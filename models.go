@@ -10,7 +10,7 @@ type Set struct {
 	MediaEntries []*MediaEntry `json:"media"`
 }
 
-// A MediaEntry containes multiple previews.
+// A MediaEntry contains multiple previews.
 type MediaEntry struct {
 	ID          string     `json:"id"`
 	Title       string     `json:"title"`

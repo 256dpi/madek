@@ -5,3 +5,6 @@ import:
 - package: github.com/parnurzeal/gorequest
   version: ^0.2.13
 - package: github.com/tidwall/gjson
+- package: github.com/gin-gonic/gin
+- package: github.com/patrickmn/go-cache
+  version: ^2.0.0
