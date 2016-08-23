@@ -231,19 +231,51 @@ func (c *Client) compileMetaData(url string) (MetaData, error) {
 	metaDataKeys := gjson.Get(metaDataStr, "meta-data.#.meta_key_id").Array()
 	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Array()
 
-	metaData := make(MetaData)
+	var wg sync.WaitGroup
+
+	type metaDatumPair struct {
+		key   string
+		value string
+	}
+
+	asyncErrors := make(chan error, len(metaDataIds))
+	metaDatumPairs := make(chan metaDatumPair, len(metaDataIds))
 
 	for i, rawKey := range metaDataKeys {
 		for madekKey, mapKey := range c.MetaKeys {
 			if rawKey.Str == madekKey {
-				metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", metaDataIds[i].Str))
-				if err != nil {
-					return nil, err
-				}
+				wg.Add(1)
 
-				metaData[mapKey] = gjson.Get(metaDatumStr, "value").Str
+				go func(mid, key string) {
+					defer wg.Done()
+
+					metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", mid))
+					if err != nil {
+						asyncErrors <- err
+						return
+					}
+
+					metaDatumPairs <- metaDatumPair{
+						key:   key,
+						value: gjson.Get(metaDatumStr, "value").Str,
+					}
+				}(metaDataIds[i].Str, mapKey)
 			}
 		}
+	}
+
+	wg.Wait()
+	close(asyncErrors)
+	close(metaDatumPairs)
+
+	if len(asyncErrors) > 0 {
+		return nil, <-asyncErrors
+	}
+
+	metaData := make(MetaData)
+
+	for pair := range metaDatumPairs {
+		metaData[pair.key] = pair.value
 	}
 
 	return metaData, err
