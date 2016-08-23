@@ -40,6 +40,7 @@ type Client struct {
 	Username    string
 	Password    string
 	LogRequests bool
+	MetaKeys    map[string]string
 }
 
 // NewClient will create and return a new Client.
@@ -48,6 +49,12 @@ func NewClient(address, username, password string) *Client {
 		Address:  address,
 		Username: username,
 		Password: password,
+		MetaKeys: map[string]string{
+			"madek_core:title":    "title",
+			"madek_core:subtitle": "subtitle",
+			//"media_content:type": "type",
+			//"zhdk_bereich:institutional_affiliation": "affiliation",
+		},
 	}
 }
 
@@ -74,24 +81,12 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 		CreatedAt: createdAt,
 	}
 
-	metaDataStr, err := c.Fetch(c.URL("/api/collections/%s/meta-data/", id))
+	metaData, err := c.compileMetaData(c.URL("/api/collections/%s/meta-data/", id))
 	if err != nil {
 		return nil, err
 	}
 
-	metaDataKeys := gjson.Get(metaDataStr, "meta-data.#.meta_key_id").Array()
-	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Array()
-
-	for i, key := range metaDataKeys {
-		if key.Str == "madek_core:title" {
-			metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", metaDataIds[i].Str))
-			if err != nil {
-				return nil, err
-			}
-
-			set.Title = gjson.Get(metaDatumStr, "value").Str
-		}
-	}
+	set.MetaData = metaData
 
 	var mediaEntryIds []string
 
@@ -124,7 +119,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 		go func(id string) {
 			defer wg.Done()
 
-			mediaEntry, err := c.compileMediaEntry(id)
+			mediaEntry, err := c.CompileMediaEntry(id)
 			if err != nil {
 				asyncErrors <- err
 				return
@@ -143,13 +138,14 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 	}
 
 	for mediaEntry := range mediaEntries {
-		set.MediaEntries = append(set.MediaEntries, mediaEntry)
+		set.MediaEntries = append(set.MediaEntries, *mediaEntry)
 	}
 
 	return set, nil
 }
 
-func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
+// CompileMediaEntry will fully compile a media entry with all available data from the API.
+func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 	mediaEntryStr, err := c.Fetch(c.URL("/api/media-entries/%s", id))
 	if err != nil {
 		return nil, err
@@ -165,24 +161,12 @@ func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 		CreatedAt: createdAt,
 	}
 
-	metaDataStr, err := c.Fetch(c.URL("/api/media-entries/%s/meta-data/", id))
+	metaData, err := c.compileMetaData(c.URL("/api/media-entries/%s/meta-data/", id))
 	if err != nil {
 		return nil, err
 	}
 
-	metaDataKeys := gjson.Get(metaDataStr, "meta-data.#.meta_key_id").Array()
-	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Array()
-
-	for i, key := range metaDataKeys {
-		if key.Str == "madek_core:title" {
-			metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", metaDataIds[i].Str))
-			if err != nil {
-				return nil, err
-			}
-
-			mediaEntry.Title = gjson.Get(metaDatumStr, "value").Str
-		}
-	}
+	mediaEntry.MetaData = metaData
 
 	mediaFileStr, err := c.Fetch(c.URL(gjson.Get(mediaEntryStr, "_json-roa.relations.media-file.href").Str))
 	if err != nil {
@@ -212,10 +196,39 @@ func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 			URL:         c.URL("/media/%s", previewID.Str),
 		}
 
-		mediaEntry.Previews = append(mediaEntry.Previews, preview)
+		mediaEntry.Previews = append(mediaEntry.Previews, *preview)
 	}
 
 	return mediaEntry, nil
+}
+
+func (c *Client) compileMetaData(url string) (MetaData, error) {
+	metaDataStr, err := c.Fetch(url)
+	if err != nil {
+		return nil, err
+	}
+
+	metaDataKeys := gjson.Get(metaDataStr, "meta-data.#.meta_key_id").Array()
+	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Array()
+
+	metaData := make(MetaData)
+
+	for i, rawKey := range metaDataKeys {
+		for madekKey, mapKey := range c.MetaKeys {
+			if rawKey.Str == madekKey {
+				metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", metaDataIds[i].Str))
+				if err != nil {
+					return nil, err
+				}
+
+				println(metaDatumStr)
+
+				metaData[mapKey] = gjson.Get(metaDatumStr, "value").Str
+			}
+		}
+	}
+
+	return metaData, err
 }
 
 // Fetch will request the passed URL from Madek.

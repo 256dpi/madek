@@ -2,24 +2,26 @@ package madek
 
 import "time"
 
+type MetaData map[string]string
+
 // A Set contains multiple media entries.
 type Set struct {
-	ID           string        `json:"id"`
-	Title        string        `json:"title"`
-	CreatedAt    time.Time     `json:"created_at"`
-	MediaEntries []*MediaEntry `json:"media_entries"`
+	ID           string       `json:"id"`
+	CreatedAt    time.Time    `json:"created_at"`
+	MetaData     MetaData     `json:"meta_data"`
+	MediaEntries []MediaEntry `json:"media_entries"`
 }
 
 // A MediaEntry contains multiple previews.
 type MediaEntry struct {
-	ID          string     `json:"id"`
-	Title       string     `json:"title"`
-	CreatedAt   time.Time  `json:"created_at"`
-	FileID      string     `json:"file_id"`
-	FileName    string     `json:"file_name"`
-	StreamURL   string     `json:"stream_url"`
-	DownloadURL string     `json:"download_url"`
-	Previews    []*Preview `json:"previews"`
+	ID          string    `json:"id"`
+	MetaData    MetaData  `json:"meta_data"`
+	CreatedAt   time.Time `json:"created_at"`
+	FileID      string    `json:"file_id"`
+	FileName    string    `json:"file_name"`
+	StreamURL   string    `json:"stream_url"`
+	DownloadURL string    `json:"download_url"`
+	Previews    []Preview `json:"previews"`
 }
 
 // A Preview is the final accessible media.
