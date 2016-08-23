@@ -112,7 +112,6 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 
 	asyncErrors := make(chan error, len(mediaEntryIds))
 	mediaEntries := make(chan *MediaEntry, len(mediaEntryIds))
-
 	wg.Add(len(mediaEntryIds))
 
 	for _, entryID := range mediaEntryIds {
@@ -180,22 +179,43 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 
 	previewIDs := gjson.Get(mediaFileStr, "previews.#.id").Array()
 
+	var wg sync.WaitGroup
+
+	asyncErrors := make(chan error, len(previewIDs))
+	previews := make(chan *Preview, len(previewIDs))
+	wg.Add(len(previewIDs))
+
 	for _, previewID := range previewIDs {
-		previewStr, err := c.Fetch(c.URL("/api/previews/%s", previewID.Str))
-		if err != nil {
-			return nil, err
-		}
+		go func(pid string) {
+			defer wg.Done()
 
-		preview := &Preview{
-			ID:          previewID.Str,
-			Type:        gjson.Get(previewStr, "media_type").Str,
-			ContentType: gjson.Get(previewStr, "content_type").Str,
-			Size:        gjson.Get(previewStr, "thumbnail").Str,
-			Width:       int(gjson.Get(previewStr, "width").Num),
-			Height:      int(gjson.Get(previewStr, "height").Num),
-			URL:         c.URL("/media/%s", previewID.Str),
-		}
+			previewStr, err := c.Fetch(c.URL("/api/previews/%s", pid))
+			if err != nil {
+				asyncErrors <- err
+				return
+			}
 
+			previews <- &Preview{
+				ID:          pid,
+				Type:        gjson.Get(previewStr, "media_type").Str,
+				ContentType: gjson.Get(previewStr, "content_type").Str,
+				Size:        gjson.Get(previewStr, "thumbnail").Str,
+				Width:       int(gjson.Get(previewStr, "width").Num),
+				Height:      int(gjson.Get(previewStr, "height").Num),
+				URL:         c.URL("/media/%s", pid),
+			}
+		}(previewID.Str)
+	}
+
+	wg.Wait()
+	close(asyncErrors)
+	close(previews)
+
+	if len(asyncErrors) > 0 {
+		return nil, <-asyncErrors
+	}
+
+	for preview := range previews {
 		mediaEntry.Previews = append(mediaEntry.Previews, *preview)
 	}
 
@@ -220,8 +240,6 @@ func (c *Client) compileMetaData(url string) (MetaData, error) {
 				if err != nil {
 					return nil, err
 				}
-
-				println(metaDatumStr)
 
 				metaData[mapKey] = gjson.Get(metaDatumStr, "value").Str
 			}
