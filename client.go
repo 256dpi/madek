@@ -50,10 +50,14 @@ func NewClient(address, username, password string) *Client {
 		Username: username,
 		Password: password,
 		MetaKeys: map[string]string{
-			"madek_core:title":    "title",
-			"madek_core:subtitle": "subtitle",
-			//"media_content:type": "type",
-			//"zhdk_bereich:institutional_affiliation": "affiliation",
+			"madek_core:title":            "title",
+			"madek_core:subtitle":         "subtitle",
+			"madek_core:copyright_notice": "copyright_holder",
+			"copyright:copyright_usage":   "copyright_usage",
+			"copyright:license":           "copyright_license",
+			"media_content:type":          "department",
+			// TODO: The following meta datum is always empty:
+			"zhdk_bereich:institutional_affiliation": "affiliation",
 		},
 	}
 }
@@ -255,9 +259,14 @@ func (c *Client) compileMetaData(url string) (MetaData, error) {
 						return
 					}
 
+					value := gjson.Get(metaDatumStr, "value.0.id").Str
+					if value == "" {
+						value = gjson.Get(metaDatumStr, "value").Str
+					}
+
 					metaDatumPairs <- metaDatumPair{
 						key:   key,
-						value: gjson.Get(metaDatumStr, "value").Str,
+						value: value,
 					}
 				}(metaDataIds[i].Str, mapKey)
 			}
