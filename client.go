@@ -51,9 +51,15 @@ func NewClient(address, username, password string) *Client {
 	}
 }
 
+// URL appends the passed format to the Madek address.
+func (c *Client) URL(format string, args ...interface{}) string {
+	args = append([]interface{}{c.Address}, args...)
+	return fmt.Sprintf("%s"+format, args...)
+}
+
 // CompileSet will fully compile a set with all available data from the API.
 func (c *Client) CompileSet(id string) (*Set, error) {
-	setStr, err := c.fetch(c.url("/api/collections/%s", id))
+	setStr, err := c.Fetch(c.URL("/api/collections/%s", id))
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +74,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 		CreatedAt: createdAt,
 	}
 
-	metaDataStr, err := c.fetch(c.url("/api/collections/%s/meta-data/", id))
+	metaDataStr, err := c.Fetch(c.URL("/api/collections/%s/meta-data/", id))
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +84,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 
 	for i, key := range metaDataKeys {
 		if key.Str == "madek_core:title" {
-			metaDatumStr, err := c.fetch(c.url("/api/meta-data/%s", metaDataIds[i].Str))
+			metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", metaDataIds[i].Str))
 			if err != nil {
 				return nil, err
 			}
@@ -91,7 +97,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 
 	var page = 0
 	for {
-		mediaEntriesStr, err := c.fetch(c.url("/api/media-entries/?collection_id=%s&page=%d", id, page))
+		mediaEntriesStr, err := c.Fetch(c.URL("/api/media-entries/?collection_id=%s&page=%d", id, page))
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +150,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 }
 
 func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
-	mediaEntryStr, err := c.fetch(c.url("/api/media-entries/%s", id))
+	mediaEntryStr, err := c.Fetch(c.URL("/api/media-entries/%s", id))
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +165,7 @@ func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 		CreatedAt: createdAt,
 	}
 
-	metaDataStr, err := c.fetch(c.url("/api/media-entries/%s/meta-data/", id))
+	metaDataStr, err := c.Fetch(c.URL("/api/media-entries/%s/meta-data/", id))
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +175,7 @@ func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 
 	for i, key := range metaDataKeys {
 		if key.Str == "madek_core:title" {
-			metaDatumStr, err := c.fetch(c.url("/api/meta-data/%s", metaDataIds[i].Str))
+			metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", metaDataIds[i].Str))
 			if err != nil {
 				return nil, err
 			}
@@ -178,20 +184,20 @@ func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 		}
 	}
 
-	mediaFileStr, err := c.fetch(c.url(gjson.Get(mediaEntryStr, "_json-roa.relations.media-file.href").Str))
+	mediaFileStr, err := c.Fetch(c.URL(gjson.Get(mediaEntryStr, "_json-roa.relations.media-file.href").Str))
 	if err != nil {
 		return nil, err
 	}
 
 	mediaEntry.FileID = gjson.Get(mediaFileStr, "id").Str
 	mediaEntry.FileName = gjson.Get(mediaFileStr, "filename").Str
-	mediaEntry.StreamURL = c.url(gjson.Get(mediaFileStr, "_json-roa.relations.data-stream.href").Str)
-	mediaEntry.DownloadURL = c.url("/files/%s", mediaEntry.FileID)
+	mediaEntry.StreamURL = c.URL(gjson.Get(mediaFileStr, "_json-roa.relations.data-stream.href").Str)
+	mediaEntry.DownloadURL = c.URL("/files/%s", mediaEntry.FileID)
 
 	previewIDs := gjson.Get(mediaFileStr, "previews.#.id").Array()
 
 	for _, previewID := range previewIDs {
-		previewStr, err := c.fetch(c.url("/api/previews/%s", previewID.Str))
+		previewStr, err := c.Fetch(c.URL("/api/previews/%s", previewID.Str))
 		if err != nil {
 			return nil, err
 		}
@@ -203,7 +209,7 @@ func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 			Size:        gjson.Get(previewStr, "thumbnail").Str,
 			Width:       int(gjson.Get(previewStr, "width").Num),
 			Height:      int(gjson.Get(previewStr, "height").Num),
-			URL:         c.url("/media/%s", previewID.Str),
+			URL:         c.URL("/media/%s", previewID.Str),
 		}
 
 		mediaEntry.Previews = append(mediaEntry.Previews, preview)
@@ -212,7 +218,8 @@ func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 	return mediaEntry, nil
 }
 
-func (c *Client) fetch(path string) (string, error) {
+// Fetch will request the passed URL from Madek.
+func (c *Client) Fetch(path string) (string, error) {
 	if c.LogRequests {
 		println("Fetching: " + path)
 	}
@@ -258,9 +265,4 @@ func (c *Client) fetch(path string) (string, error) {
 	}
 
 	return str, nil
-}
-
-func (c *Client) url(format string, args ...interface{}) string {
-	args = append([]interface{}{c.Address}, args...)
-	return fmt.Sprintf("%s"+format, args...)
 }
