@@ -2,6 +2,7 @@ package madek
 
 import "time"
 
+// MetData contains multiple metadata key value pairs.
 type MetaData map[string]string
 
 // A Set contains multiple media entries.
