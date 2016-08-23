@@ -36,9 +36,10 @@ func (r *RequestError) Error() string {
 
 // A Client is used to request data from the Madek API.
 type Client struct {
-	Address  string
-	Username string
-	Password string
+	Address     string
+	Username    string
+	Password    string
+	LogRequests bool
 }
 
 // NewClient will create and return a new Client.
@@ -212,7 +213,9 @@ func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 }
 
 func (c *Client) fetch(path string) (string, error) {
-	println(path)
+	if c.LogRequests {
+		println("Fetching: " + path)
+	}
 
 	res, str, err := gorequest.New().Get(path).
 		SetBasicAuth(c.Username, c.Password).
