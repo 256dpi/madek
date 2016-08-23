@@ -219,12 +219,12 @@ func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 }
 
 // Fetch will request the passed URL from Madek.
-func (c *Client) Fetch(path string) (string, error) {
+func (c *Client) Fetch(url string) (string, error) {
 	if c.LogRequests {
-		println("Fetching: " + path)
+		println("Fetching: " + url)
 	}
 
-	res, str, err := gorequest.New().Get(path).
+	res, str, err := gorequest.New().Get(url).
 		SetBasicAuth(c.Username, c.Password).
 		Set("Accept", "application/json-roa+json").
 		End()
@@ -232,35 +232,35 @@ func (c *Client) Fetch(path string) (string, error) {
 	if len(err) > 0 {
 		return "", &RequestError{
 			Err: err[0],
-			URL: path,
+			URL: url,
 		}
 	}
 
 	if res.StatusCode == http.StatusUnauthorized {
 		return "", &RequestError{
 			Err: ErrInvalidAuthentication,
-			URL: path,
+			URL: url,
 		}
 	}
 
 	if res.StatusCode == http.StatusForbidden {
 		return "", &RequestError{
 			Err: ErrAccessForbidden,
-			URL: path,
+			URL: url,
 		}
 	}
 
 	if res.StatusCode == http.StatusNotFound {
 		return "", &RequestError{
 			Err: ErrNotFound,
-			URL: path,
+			URL: url,
 		}
 	}
 
 	if res.StatusCode != http.StatusOK {
 		return "", &RequestError{
 			Err: ErrRequestFailed,
-			URL: path,
+			URL: url,
 		}
 	}
 
