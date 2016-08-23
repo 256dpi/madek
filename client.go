@@ -72,8 +72,8 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 		return nil, err
 	}
 
-	metaDataKeys := gjson.Get(metaDataStr, "meta-data.#.meta_key_id").Multi
-	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Multi
+	metaDataKeys := gjson.Get(metaDataStr, "meta-data.#.meta_key_id").Array()
+	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Array()
 
 	for i, key := range metaDataKeys {
 		if key.Str == "madek_core:title" {
@@ -95,7 +95,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 			return nil, err
 		}
 
-		for _, id := range gjson.Get(mediaEntriesStr, "media-entries.#.id").Multi {
+		for _, id := range gjson.Get(mediaEntriesStr, "media-entries.#.id").Array() {
 			mediaEntryIds = append(mediaEntryIds, id.Str)
 		}
 
@@ -163,8 +163,8 @@ func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 		return nil, err
 	}
 
-	metaDataKeys := gjson.Get(metaDataStr, "meta-data.#.meta_key_id").Multi
-	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Multi
+	metaDataKeys := gjson.Get(metaDataStr, "meta-data.#.meta_key_id").Array()
+	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Array()
 
 	for i, key := range metaDataKeys {
 		if key.Str == "madek_core:title" {
@@ -187,7 +187,7 @@ func (c *Client) compileMediaEntry(id string) (*MediaEntry, error) {
 	mediaEntry.StreamURL = c.url(gjson.Get(mediaFileStr, "_json-roa.relations.data-stream.href").Str)
 	mediaEntry.DownloadURL = c.url("/files/%s", mediaEntry.FileID)
 
-	previewIDs := gjson.Get(mediaFileStr, "previews.#.id").Multi
+	previewIDs := gjson.Get(mediaFileStr, "previews.#.id").Array()
 
 	for _, previewID := range previewIDs {
 		previewStr, err := c.fetch(c.url("/api/previews/%s", previewID.Str))

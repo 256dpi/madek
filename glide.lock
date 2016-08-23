@@ -1,5 +1,5 @@
 hash: 231b07a5a62d961b54dd855edcff05270ef952e627171f28af8f495baa16b7c4
-updated: 2016-08-22T16:41:26.50690947+02:00
+updated: 2016-08-23T09:06:45.161285303+02:00
 imports:
 - name: github.com/docopt/docopt-go
   version: 784ddc588536785e7299f7272f39101f7faccc3f
@@ -21,7 +21,7 @@ imports:
 - name: github.com/patrickmn/go-cache
   version: 1881a9bccb818787f68c52bfba648c6cf34c34fa
 - name: github.com/tidwall/gjson
-  version: 696d68fd62aaaeb93fe42e898daa76ab9fbff8d1
+  version: c6faea1947cf2cb49870587f09c1d81e0aba4397
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
