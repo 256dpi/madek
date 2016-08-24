@@ -52,10 +52,10 @@ func NewClient(address, username, password string) *Client {
 		MetaKeys: map[string]string{
 			"madek_core:title":            "title",
 			"madek_core:subtitle":         "subtitle",
+			"media_content:type":          "genre",
 			"madek_core:copyright_notice": "copyright_holder",
 			"copyright:copyright_usage":   "copyright_usage",
 			"copyright:license":           "copyright_license",
-			"media_content:type":          "department",
 			// TODO: The following meta datum is always empty:
 			"zhdk_bereich:institutional_affiliation": "affiliation",
 		},
