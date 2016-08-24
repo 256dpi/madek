@@ -25,13 +25,13 @@ func main() {
 }
 
 func fetch(client *madek.Client, id string) {
-	set, err := client.CompileSet(id)
+	coll, err := client.CompileCollection(id)
 	if err != nil {
 		fmt.Printf("Error encountered: %s\n", err)
 		return
 	}
 
-	bytes, err := json.MarshalIndent(set, "", "  ")
+	bytes, err := json.MarshalIndent(coll, "", "  ")
 	if err != nil {
 		panic(err)
 	}
@@ -55,22 +55,22 @@ func server(client *madek.Client, cacheEnabled bool) {
 		if ctx.Query("fresh") != "yes" {
 			val, ok := requestCache.Get(id)
 			if ok {
-				ctx.JSON(http.StatusOK, val.(*madek.Set))
+				ctx.JSON(http.StatusOK, val.(*madek.Collection))
 				return
 			}
 		}
 
-		set, err := client.CompileSet(id)
+		coll, err := client.CompileCollection(id)
 		if err != nil {
 			ctx.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 
 		if cacheEnabled {
-			requestCache.Set(id, set, cache.NoExpiration)
+			requestCache.Set(id, coll, cache.NoExpiration)
 		}
 
-		ctx.JSON(http.StatusOK, set)
+		ctx.JSON(http.StatusOK, coll)
 	})
 
 	fmt.Println("+------------------------------------------------------------+")

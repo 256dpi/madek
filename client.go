@@ -68,19 +68,20 @@ func (c *Client) URL(format string, args ...interface{}) string {
 	return fmt.Sprintf("%s"+format, args...)
 }
 
-// CompileSet will fully compile a set with all available data from the API.
-func (c *Client) CompileSet(id string) (*Set, error) {
-	setStr, err := c.Fetch(c.URL("/api/collections/%s", id))
+// CompileCollection will fully compile a collection with all available data
+// from the API.
+func (c *Client) CompileCollection(id string) (*Collection, error) {
+	collStr, err := c.Fetch(c.URL("/api/collections/%s", id))
 	if err != nil {
 		return nil, err
 	}
 
-	createdAt, err := time.Parse(time.RFC3339, gjson.Get(setStr, "created_at").Str)
+	createdAt, err := time.Parse(time.RFC3339, gjson.Get(collStr, "created_at").Str)
 	if err != nil {
 		return nil, err
 	}
 
-	set := &Set{
+	coll := &Collection{
 		ID:        id,
 		CreatedAt: createdAt,
 	}
@@ -90,7 +91,7 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 		return nil, err
 	}
 
-	set.MetaData = metaData
+	coll.MetaData = metaData
 
 	var mediaEntryIds []string
 
@@ -141,10 +142,10 @@ func (c *Client) CompileSet(id string) (*Set, error) {
 	}
 
 	for mediaEntry := range mediaEntries {
-		set.MediaEntries = append(set.MediaEntries, *mediaEntry)
+		coll.MediaEntries = append(coll.MediaEntries, *mediaEntry)
 	}
 
-	return set, nil
+	return coll, nil
 }
 
 // CompileMediaEntry will fully compile a media entry with all available data from the API.

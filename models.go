@@ -5,8 +5,8 @@ import "time"
 // MetaData contains multiple metadata key value pairs.
 type MetaData map[string]string
 
-// A Set contains multiple media entries.
-type Set struct {
+// A Collection contains multiple media entries.
+type Collection struct {
 	ID           string       `json:"id"`
 	CreatedAt    time.Time    `json:"created_at"`
 	MetaData     MetaData     `json:"meta_data"`
