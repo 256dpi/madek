@@ -142,7 +142,7 @@ func (c *Client) CompileCollection(id string) (*Collection, error) {
 	}
 
 	for mediaEntry := range mediaEntries {
-		coll.MediaEntries = append(coll.MediaEntries, *mediaEntry)
+		coll.MediaEntries = append(coll.MediaEntries, mediaEntry)
 	}
 
 	return coll, nil
@@ -221,7 +221,7 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 	}
 
 	for preview := range previews {
-		mediaEntry.Previews = append(mediaEntry.Previews, *preview)
+		mediaEntry.Previews = append(mediaEntry.Previews, preview)
 	}
 
 	return mediaEntry, nil

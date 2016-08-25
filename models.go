@@ -10,7 +10,7 @@ type Collection struct {
 	ID           string       `json:"id"`
 	CreatedAt    time.Time    `json:"created_at"`
 	MetaData     MetaData     `json:"meta_data"`
-	MediaEntries []MediaEntry `json:"media_entries"`
+	MediaEntries []*MediaEntry `json:"media_entries"`
 }
 
 // A MediaEntry contains multiple previews.
@@ -22,7 +22,7 @@ type MediaEntry struct {
 	FileName    string    `json:"file_name"`
 	StreamURL   string    `json:"stream_url"`
 	DownloadURL string    `json:"download_url"`
-	Previews    []Preview `json:"previews"`
+	Previews    []*Preview `json:"previews"`
 }
 
 // A Preview is the final accessible media.
