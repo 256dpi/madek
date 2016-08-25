@@ -34,18 +34,12 @@ func (r *RequestError) Error() string {
 	return r.Err.Error() + ": " + r.URL
 }
 
-type keyValue struct {
-	key   string
-	value interface{}
-}
-
 // A Client is used to request data from the Madek API.
 type Client struct {
 	Address     string
 	Username    string
 	Password    string
 	LogRequests bool
-	MetaKeys    map[string]string
 
 	peopleCache  map[string]string
 	keywordCache map[string]string
@@ -57,20 +51,9 @@ type Client struct {
 // NewClient will create and return a new Client.
 func NewClient(address, username, password string) *Client {
 	return &Client{
-		Address:  address,
-		Username: username,
-		Password: password,
-		MetaKeys: map[string]string{
-			"madek_core:title":            "title",
-			"madek_core:subtitle":         "subtitle",
-			"madek_core:authors":          "authors",
-			"media_content:type":          "genres",
-			"madek_core:copyright_notice": "copyright_holder",
-			"copyright:copyright_usage":   "copyright_usage",
-			"copyright:license":           "copyright_licenses",
-			// TODO: The following meta datum is always empty:
-			//"zhdk_bereich:institutional_affiliation": "affiliation",
-		},
+		Address:      address,
+		Username:     username,
+		Password:     password,
 		peopleCache:  make(map[string]string),
 		keywordCache: make(map[string]string),
 		licenseCache: make(map[string]string),
@@ -242,107 +225,102 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 	return mediaEntry, nil
 }
 
-func (c *Client) compileMetaData(url string) (MetaData, error) {
+func (c *Client) compileMetaData(url string) (*MetaData, error) {
 	metaDataStr, err := c.Fetch(url)
 	if err != nil {
 		return nil, err
 	}
 
-	metaDataKeys := gjson.Get(metaDataStr, "meta-data.#.meta_key_id").Array()
-	metaDataIds := gjson.Get(metaDataStr, "meta-data.#.id").Array()
+	metaData := &MetaData{}
 
-	var wg sync.WaitGroup
+	for _, metaDatum := range gjson.Get(metaDataStr, "meta-data").Array() {
+		mid := metaDatum.Get("id").Str
+		mkey := metaDatum.Get("meta_key_id").Str
 
-	asyncErrors := make(chan error, len(metaDataIds))
-	metaDatumPairs := make(chan *keyValue, len(metaDataIds))
-
-	for i, rawKey := range metaDataKeys {
-		for madekKey, mapKey := range c.MetaKeys {
-			if rawKey.Str == madekKey {
-				wg.Add(1)
-
-				go func(mid, key string) {
-					defer wg.Done()
-
-					metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", mid))
-					if err != nil {
-						asyncErrors <- err
-						return
-					}
-
-					typ := gjson.Get(metaDatumStr, "type").Str
-
-					var metaDatumPair = &keyValue{
-						key: key,
-					}
-
-					switch typ {
-					case "MetaDatum::Text":
-						metaDatumPair.value = gjson.Get(metaDatumStr, "value").Str
-					case "MetaDatum::Keywords":
-						var list []string
-
-						for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
-							name, err := c.getKeywordTerm(item.Str)
-							if err != nil {
-								asyncErrors <- err
-								return
-							}
-
-							list = append(list, name)
-						}
-
-						metaDatumPair.value = list
-					case "MetaDatum::People":
-						var list []string
-
-						for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
-							name, err := c.getNameOfPerson(item.Str)
-							if err != nil {
-								asyncErrors <- err
-								return
-							}
-
-							list = append(list, name)
-						}
-
-						metaDatumPair.value = list
-					case "MetaDatum::Licenses":
-						var list []string
-
-						for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
-							name, err := c.getLicenseLabel(item.Str)
-							if err != nil {
-								asyncErrors <- err
-								return
-							}
-
-							list = append(list, name)
-						}
-
-						metaDatumPair.value = list
-					default:
-						panic("unhandled meta datum type: " + typ)
-					}
-
-					metaDatumPairs <- metaDatumPair
-				}(metaDataIds[i].Str, mapKey)
-			}
+		if !stringInList(supportedMetaKeys, mkey) {
+			continue
 		}
-	}
 
-	wg.Wait()
-	close(asyncErrors)
-	close(metaDatumPairs)
+		metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", mid))
+		if err != nil {
+			return nil, err
+		}
 
-	if len(asyncErrors) > 0 {
-		return nil, <-asyncErrors
-	}
+		typ := gjson.Get(metaDatumStr, "type").Str
 
-	metaData := make(MetaData)
+		switch typ {
+		case "MetaDatum::Text":
+			strValue := gjson.Get(metaDatumStr, "value").Str
 
-	for pair := range metaDatumPairs {
-		metaData[pair.key] = pair.value
+			switch mkey {
+			case "madek_core:title":
+				metaData.Title = strValue
+			case "madek_core:subtitle":
+				metaData.Subtitle = strValue
+			case "madek_core:copyright_notice":
+				metaData.Copyright.Holder = strValue
+			case "copyright:copyright_usage":
+				metaData.Copyright.Usage = strValue
+			default:
+				return nil, fmt.Errorf("unhandled meta datum: %s", mkey)
+			}
+		case "MetaDatum::Keywords":
+			var list []string
+
+			for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
+				name, err := c.getKeywordTerm(item.Str)
+				if err != nil {
+					return nil, err
+				}
+
+				list = append(list, name)
+			}
+
+			switch mkey {
+			case "media_content:type":
+				metaData.Genres = list
+			default:
+				return nil, fmt.Errorf("unhandled meta datum: %s", mkey)
+			}
+		case "MetaDatum::People":
+			var list []string
+
+			for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
+				name, err := c.getNameOfPerson(item.Str)
+				if err != nil {
+					return nil, err
+				}
+
+				list = append(list, name)
+			}
+
+			switch mkey {
+			case "madek_core:authors":
+				metaData.Authors = list
+			default:
+				return nil, fmt.Errorf("unhandled meta datum: %s", mkey)
+			}
+		case "MetaDatum::Licenses":
+			var list []string
+
+			for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
+				name, err := c.getLicenseLabel(item.Str)
+				if err != nil {
+					return nil, err
+				}
+
+				list = append(list, name)
+			}
+
+			switch mkey {
+			case "copyright:license":
+				metaData.Copyright.Licenses = list
+			default:
+				return nil, fmt.Errorf("unhandled meta datum: %s", mkey)
+			}
+		default:
+			return nil, fmt.Errorf("unhandled meta datum type: %s", typ)
+		}
 	}
 
 	return metaData, err

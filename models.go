@@ -2,21 +2,42 @@ package madek
 
 import "time"
 
+var supportedMetaKeys = []string{
+	"madek_core:title",
+	"madek_core:subtitle",
+	"madek_core:authors",
+	"media_content:type",
+	"madek_core:copyright_notice",
+	"copyright:copyright_usage",
+	"copyright:license",
+	//"zhdk_bereich:institutional_affiliation"
+}
+
 // MetaData contains multiple metadata key value pairs.
-type MetaData map[string]interface{}
+type MetaData struct {
+	Title     string   `json:"title,omitmepty"`
+	Subtitle  string   `json:"subtitle,omitempty"`
+	Authors   []string `json:"authors,omitempty"`
+	Genres    []string `json:"genres,omitempty"`
+	Copyright struct {
+		Holder   string   `json:"holder"`
+		Usage    string   `json:"usage"`
+		Licenses []string `json:"licenses"`
+	} `json:"copyright,omitempty"`
+}
 
 // A Collection contains multiple media entries.
 type Collection struct {
 	ID           string        `json:"id"`
 	CreatedAt    time.Time     `json:"created_at"`
-	MetaData     MetaData      `json:"meta_data"`
+	MetaData     *MetaData     `json:"meta_data"`
 	MediaEntries []*MediaEntry `json:"media_entries"`
 }
 
 // A MediaEntry contains multiple previews.
 type MediaEntry struct {
 	ID          string     `json:"id"`
-	MetaData    MetaData   `json:"meta_data"`
+	MetaData    *MetaData  `json:"meta_data"`
 	CreatedAt   time.Time  `json:"created_at"`
 	FileID      string     `json:"file_id"`
 	FileName    string     `json:"file_name"`
