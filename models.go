@@ -3,7 +3,7 @@ package madek
 import "time"
 
 // MetaData contains multiple metadata key value pairs.
-type MetaData map[string]string
+type MetaData map[string]interface{}
 
 // A Collection contains multiple media entries.
 type Collection struct {

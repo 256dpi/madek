@@ -34,6 +34,11 @@ func (r *RequestError) Error() string {
 	return r.Err.Error() + ": " + r.URL
 }
 
+type keyValue struct {
+	key   string
+	value interface{}
+}
+
 // A Client is used to request data from the Madek API.
 type Client struct {
 	Address     string
@@ -41,6 +46,12 @@ type Client struct {
 	Password    string
 	LogRequests bool
 	MetaKeys    map[string]string
+
+	peopleCache  map[string]string
+	keywordCache map[string]string
+	licenseCache map[string]string
+
+	shortLock sync.Mutex
 }
 
 // NewClient will create and return a new Client.
@@ -52,13 +63,17 @@ func NewClient(address, username, password string) *Client {
 		MetaKeys: map[string]string{
 			"madek_core:title":            "title",
 			"madek_core:subtitle":         "subtitle",
-			"media_content:type":          "genre",
+			"madek_core:authors":          "authors",
+			"media_content:type":          "genres",
 			"madek_core:copyright_notice": "copyright_holder",
 			"copyright:copyright_usage":   "copyright_usage",
-			"copyright:license":           "copyright_license",
+			"copyright:license":           "copyright_licenses",
 			// TODO: The following meta datum is always empty:
-			"zhdk_bereich:institutional_affiliation": "affiliation",
+			//"zhdk_bereich:institutional_affiliation": "affiliation",
 		},
+		peopleCache:  make(map[string]string),
+		keywordCache: make(map[string]string),
+		licenseCache: make(map[string]string),
 	}
 }
 
@@ -238,13 +253,8 @@ func (c *Client) compileMetaData(url string) (MetaData, error) {
 
 	var wg sync.WaitGroup
 
-	type metaDatumPair struct {
-		key   string
-		value string
-	}
-
 	asyncErrors := make(chan error, len(metaDataIds))
-	metaDatumPairs := make(chan metaDatumPair, len(metaDataIds))
+	metaDatumPairs := make(chan *keyValue, len(metaDataIds))
 
 	for i, rawKey := range metaDataKeys {
 		for madekKey, mapKey := range c.MetaKeys {
@@ -260,15 +270,62 @@ func (c *Client) compileMetaData(url string) (MetaData, error) {
 						return
 					}
 
-					value := gjson.Get(metaDatumStr, "value.0.id").Str
-					if value == "" {
-						value = gjson.Get(metaDatumStr, "value").Str
+					typ := gjson.Get(metaDatumStr, "type").Str
+
+					var metaDatumPair = &keyValue{
+						key: key,
 					}
 
-					metaDatumPairs <- metaDatumPair{
-						key:   key,
-						value: value,
+					switch typ {
+					case "MetaDatum::Text":
+						metaDatumPair.value = gjson.Get(metaDatumStr, "value").Str
+					case "MetaDatum::Keywords":
+						var list []string
+
+						for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
+							name, err := c.getKeywordTerm(item.Str)
+							if err != nil {
+								asyncErrors <- err
+								return
+							}
+
+							list = append(list, name)
+						}
+
+						metaDatumPair.value = list
+					case "MetaDatum::People":
+						var list []string
+
+						for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
+							name, err := c.getNameOfPerson(item.Str)
+							if err != nil {
+								asyncErrors <- err
+								return
+							}
+
+							list = append(list, name)
+						}
+
+						metaDatumPair.value = list
+					case "MetaDatum::Licenses":
+						var list []string
+
+						for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
+							name, err := c.getLicenseLabel(item.Str)
+							if err != nil {
+								asyncErrors <- err
+								return
+							}
+
+							list = append(list, name)
+						}
+
+						metaDatumPair.value = list
+					default:
+						panic("unhandled meta datum type: " + typ)
 					}
+
+					metaDatumPairs <- metaDatumPair
 				}(metaDataIds[i].Str, mapKey)
 			}
 		}
@@ -289,6 +346,63 @@ func (c *Client) compileMetaData(url string) (MetaData, error) {
 	}
 
 	return metaData, err
+}
+
+func (c *Client) getNameOfPerson(id string) (string, error) {
+	c.shortLock.Lock()
+	defer c.shortLock.Unlock()
+
+	if name, ok := c.peopleCache[id]; ok {
+		return name, nil
+	}
+
+	personStr, err := c.Fetch(c.URL("/api/people/%s", id))
+	if err != nil {
+		return "", err
+	}
+
+	name := gjson.Get(personStr, "first_name").Str + " " + gjson.Get(personStr, "last_name").Str
+	c.peopleCache[id] = name
+
+	return name, nil
+}
+
+func (c *Client) getKeywordTerm(id string) (string, error) {
+	c.shortLock.Lock()
+	defer c.shortLock.Unlock()
+
+	if term, ok := c.keywordCache[id]; ok {
+		return term, nil
+	}
+
+	keywordStr, err := c.Fetch(c.URL("/api/keywords/%s", id))
+	if err != nil {
+		return "", err
+	}
+
+	term := gjson.Get(keywordStr, "term").Str
+	c.keywordCache[id] = term
+
+	return term, nil
+}
+
+func (c *Client) getLicenseLabel(id string) (string, error) {
+	c.shortLock.Lock()
+	defer c.shortLock.Unlock()
+
+	if label, ok := c.licenseCache[id]; ok {
+		return label, nil
+	}
+
+	licenseStr, err := c.Fetch(c.URL("/api/licenses/%s", id))
+	if err != nil {
+		return "", err
+	}
+
+	label := gjson.Get(licenseStr, "label").Str
+	c.licenseCache[id] = label
+
+	return label, nil
 }
 
 // Fetch will request the passed URL from Madek.
