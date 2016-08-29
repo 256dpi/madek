@@ -1,38 +1,36 @@
 package madek
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/parnurzeal/gorequest"
+	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 )
 
 // ErrInvalidAuthentication is returned when the supplied authentication
 // credentials have been rejected.
-var ErrInvalidAuthentication = errors.New("Invalid Authentication")
+var ErrInvalidAuthentication = errors.New("invalid authentication")
 
 // ErrAccessForbidden is returned when the requested resources is protected.
-var ErrAccessForbidden = errors.New("Access Forbidden")
+var ErrAccessForbidden = errors.New("access forbidden")
 
 // ErrRequestFailed is returned when the request failed due to some error.
-var ErrRequestFailed = errors.New("Request Failed")
+var ErrRequestFailed = errors.New("request failed")
 
-// ErrNotFound ist returned when the requested resource ist not found.
-var ErrNotFound = errors.New("Not Found")
+// ErrNotFound is returned when the requested resource ist not found.
+var ErrNotFound = errors.New("not found")
 
-// A RequestError ist returned on a request error and provides additional info.
-type RequestError struct {
-	Err error
-	URL string
-}
+// ErrUnhandledMetaDatum is returned when a received meta datum has not been
+// handled.
+var ErrUnhandledMetaDatum = errors.New("unhandled meta datum")
 
-func (r *RequestError) Error() string {
-	return r.Err.Error() + ": " + r.URL
-}
+// ErrUnhandledMetaDatumType is returned when a fetched meta datum has not
+// been handled.
+var ErrUnhandledMetaDatumType = errors.New("unhandled meta darum type")
 
 // A Client is used to request data from the Madek API.
 type Client struct {
@@ -262,7 +260,7 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 			case "copyright:copyright_usage":
 				metaData.Copyright.Usage = strValue
 			default:
-				return nil, fmt.Errorf("unhandled meta datum: %s", mkey)
+				return nil, errors.Wrap(ErrUnhandledMetaDatum, mkey)
 			}
 		case "MetaDatum::Keywords":
 			var list []string
@@ -282,7 +280,7 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 			case "media_content:type":
 				metaData.Genres = list
 			default:
-				return nil, fmt.Errorf("unhandled meta datum: %s", mkey)
+				return nil, errors.Wrap(ErrUnhandledMetaDatum, mkey)
 			}
 		case "MetaDatum::People":
 			var list []string
@@ -300,7 +298,7 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 			case "madek_core:authors":
 				metaData.Authors = list
 			default:
-				return nil, fmt.Errorf("unhandled meta datum: %s", mkey)
+				return nil, errors.Wrap(ErrUnhandledMetaDatum, mkey)
 			}
 		case "MetaDatum::Licenses":
 			var list []string
@@ -318,10 +316,10 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 			case "copyright:license":
 				metaData.Copyright.Licenses = list
 			default:
-				return nil, fmt.Errorf("unhandled meta datum: %s", mkey)
+				return nil, errors.Wrap(ErrUnhandledMetaDatum, mkey)
 			}
 		default:
-			return nil, fmt.Errorf("unhandled meta datum type: %s", typ)
+			return nil, errors.Wrap(ErrUnhandledMetaDatumType, typ)
 		}
 	}
 
@@ -397,39 +395,19 @@ func (c *Client) Fetch(url string) (string, error) {
 		End()
 
 	if len(err) > 0 {
-		return "", &RequestError{
-			Err: err[0],
-			URL: url,
-		}
+		return "", errors.Wrap(err[0], url)
 	}
 
-	if res.StatusCode == http.StatusUnauthorized {
-		return "", &RequestError{
-			Err: ErrInvalidAuthentication,
-			URL: url,
-		}
+	switch res.StatusCode {
+	case http.StatusUnauthorized:
+		return "", errors.Wrap(ErrInvalidAuthentication, url)
+	case http.StatusForbidden:
+		return "", errors.Wrap(ErrAccessForbidden, url)
+	case http.StatusNotFound:
+		return "", errors.Wrap(ErrNotFound, url)
+	case http.StatusOK:
+		return str, nil
+	default:
+		return "", errors.Wrap(ErrRequestFailed, url)
 	}
-
-	if res.StatusCode == http.StatusForbidden {
-		return "", &RequestError{
-			Err: ErrAccessForbidden,
-			URL: url,
-		}
-	}
-
-	if res.StatusCode == http.StatusNotFound {
-		return "", &RequestError{
-			Err: ErrNotFound,
-			URL: url,
-		}
-	}
-
-	if res.StatusCode != http.StatusOK {
-		return "", &RequestError{
-			Err: ErrRequestFailed,
-			URL: url,
-		}
-	}
-
-	return str, nil
 }

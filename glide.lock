@@ -1,10 +1,10 @@
-hash: 231b07a5a62d961b54dd855edcff05270ef952e627171f28af8f495baa16b7c4
-updated: 2016-08-23T09:06:45.161285303+02:00
+hash: 08ae1e2435b4e50e529c5802834de1a7724a23dada4ceb21b4411e3e9feedac6
+updated: 2016-08-29T14:37:06.039894633+02:00
 imports:
 - name: github.com/docopt/docopt-go
   version: 784ddc588536785e7299f7272f39101f7faccc3f
 - name: github.com/gin-gonic/gin
-  version: f931d1ea80ae95a6fc739213cdd9399bd2967fb6
+  version: 5caaac4c5c712a9e7a7de29e6c24ef46c753017f
   subpackages:
   - binding
   - render
@@ -20,13 +20,15 @@ imports:
   version: b64673b971a1742b8ba91f228f1c029632d4b686
 - name: github.com/patrickmn/go-cache
   version: 1881a9bccb818787f68c52bfba648c6cf34c34fa
+- name: github.com/pkg/errors
+  version: 17b591df37844cde689f4d5813e5cea0927d8dd2
 - name: github.com/tidwall/gjson
-  version: c6faea1947cf2cb49870587f09c1d81e0aba4397
+  version: 550c66c276592668d8c9532be82f4506e937725e
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
-  - publicsuffix
   - context
+  - publicsuffix
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
 - name: gopkg.in/yaml.v2

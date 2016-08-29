@@ -8,3 +8,5 @@ import:
 - package: github.com/gin-gonic/gin
 - package: github.com/patrickmn/go-cache
   version: ^2.0.0
+- package: github.com/pkg/errors
+  version: ^0.7.1
