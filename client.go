@@ -277,6 +277,8 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 			}
 
 			switch mkey {
+			case "madek_core:keywords":
+				metaData.Keywords = list
 			case "media_content:type":
 				metaData.Genres = list
 			default:
