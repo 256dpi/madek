@@ -255,6 +255,8 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 				metaData.Title = strValue
 			case "madek_core:subtitle":
 				metaData.Subtitle = strValue
+			case "madek_core:description":
+				metaData.Description = strValue
 			case "madek_core:copyright_notice":
 				metaData.Copyright.Holder = strValue
 			case "copyright:copyright_usage":

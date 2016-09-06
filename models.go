@@ -5,6 +5,7 @@ import "time"
 var supportedMetaKeys = []string{
 	"madek_core:title",
 	"madek_core:subtitle",
+	"madek_core:description",
 	"madek_core:authors",
 	"madek_core:keywords",
 	"media_content:type",
@@ -16,12 +17,13 @@ var supportedMetaKeys = []string{
 
 // MetaData contains multiple metadata key value pairs.
 type MetaData struct {
-	Title     string   `json:"title,omitmepty"`
-	Subtitle  string   `json:"subtitle,omitempty"`
-	Authors   []string `json:"authors,omitempty"`
-	Keywords  []string `json:"keywords,omitempty"`
-	Genres    []string `json:"genres,omitempty"`
-	Copyright struct {
+	Title       string   `json:"title,omitmepty"`
+	Subtitle    string   `json:"subtitle,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Authors     []string `json:"authors,omitempty"`
+	Keywords    []string `json:"keywords,omitempty"`
+	Genres      []string `json:"genres,omitempty"`
+	Copyright   struct {
 		Holder   string   `json:"holder"`
 		Usage    string   `json:"usage"`
 		Licenses []string `json:"licenses"`
