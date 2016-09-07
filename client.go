@@ -247,7 +247,7 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 		typ := gjson.Get(metaDatumStr, "type").Str
 
 		switch typ {
-		case "MetaDatum::Text":
+		case "MetaDatum::Text", "MetaDatum::TextDate":
 			strValue := gjson.Get(metaDatumStr, "value").Str
 
 			switch mkey {
@@ -257,6 +257,8 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 				metaData.Subtitle = strValue
 			case "madek_core:description":
 				metaData.Description = strValue
+			case "madek_core:portrayed_object_date":
+				metaData.Year = strValue
 			case "madek_core:copyright_notice":
 				metaData.Copyright.Holder = strValue
 			case "copyright:copyright_usage":

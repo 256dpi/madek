@@ -9,6 +9,7 @@ var supportedMetaKeys = []string{
 	"madek_core:authors",
 	"madek_core:keywords",
 	"media_content:type",
+	"madek_core:portrayed_object_date",
 	"madek_core:copyright_notice",
 	"copyright:copyright_usage",
 	"copyright:license",
@@ -23,6 +24,7 @@ type MetaData struct {
 	Authors     []string `json:"authors,omitempty"`
 	Keywords    []string `json:"keywords,omitempty"`
 	Genres      []string `json:"genres,omitempty"`
+	Year        string   `json:"year,omitempty"`
 	Copyright   struct {
 		Holder   string   `json:"holder"`
 		Usage    string   `json:"usage"`
