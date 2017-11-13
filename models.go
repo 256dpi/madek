@@ -18,7 +18,7 @@ var supportedMetaKeys = []string{
 
 // MetaData contains multiple metadata key value pairs.
 type MetaData struct {
-	Title       string   `json:"title,omitmepty"`
+	Title       string   `json:"title,omitempty"`
 	Subtitle    string   `json:"subtitle,omitempty"`
 	Description string   `json:"description,omitempty"`
 	Authors     []string `json:"authors,omitempty"`

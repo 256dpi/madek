@@ -30,7 +30,7 @@ var ErrUnhandledMetaDatum = errors.New("unhandled meta datum")
 
 // ErrUnhandledMetaDatumType is returned when a fetched meta datum has not
 // been handled.
-var ErrUnhandledMetaDatumType = errors.New("unhandled meta darum type")
+var ErrUnhandledMetaDatumType = errors.New("unhandled meta datum type")
 
 // A Client is used to request data from the Madek API.
 type Client struct {
