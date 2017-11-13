@@ -39,7 +39,8 @@ type Client struct {
 	Password    string
 	LogRequests bool
 
-	peopleCache  map[string]string
+	authorCache  map[string]*Author
+	groupCache   map[string]*Group
 	keywordCache map[string]string
 	licenseCache map[string]string
 
@@ -52,7 +53,8 @@ func NewClient(address, username, password string) *Client {
 		Address:      address,
 		Username:     username,
 		Password:     password,
-		peopleCache:  make(map[string]string),
+		authorCache:  make(map[string]*Author),
+		groupCache:   make(map[string]*Group),
 		keywordCache: make(map[string]string),
 		licenseCache: make(map[string]string),
 	}
@@ -264,7 +266,7 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 			case "copyright:copyright_usage":
 				metaData.Copyright.Usage = strValue
 			default:
-				return nil, errors.Wrap(ErrUnhandledMetaDatum, metaKey)
+				return nil, errors.Wrap(ErrUnhandledMetaDatum, fmt.Sprintf("%s: %s", typ, metaKey))
 			}
 		case "MetaDatum::Keywords":
 			var list []string
@@ -283,44 +285,29 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 				metaData.Keywords = list
 			case "media_content:type":
 				metaData.Genres = list
-			default:
-				return nil, errors.Wrap(ErrUnhandledMetaDatum, metaKey)
-			}
-		case "MetaDatum::People":
-			var list []string
-
-			for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
-				name, err := c.getNameOfPerson(item.Str)
-				if err != nil {
-					return nil, err
-				}
-
-				list = append(list, name)
-			}
-
-			switch metaKey {
-			case "madek_core:authors":
-				metaData.Authors = list
-			default:
-				return nil, errors.Wrap(ErrUnhandledMetaDatum, metaKey)
-			}
-		case "MetaDatum::Licenses":
-			var list []string
-
-			for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
-				name, err := c.getLicenseLabel(item.Str)
-				if err != nil {
-					return nil, err
-				}
-
-				list = append(list, name)
-			}
-
-			switch metaKey {
 			case "copyright:license":
 				metaData.Copyright.Licenses = list
 			default:
-				return nil, errors.Wrap(ErrUnhandledMetaDatum, metaKey)
+				return nil, errors.Wrap(ErrUnhandledMetaDatum, fmt.Sprintf("%s: %s", typ, metaKey))
+			}
+		case "MetaDatum::People":
+			switch metaKey {
+			case "madek_core:authors":
+				authors, err := c.getAuthors(metaDatumStr)
+				if err != nil {
+					return nil, err
+				}
+
+				metaData.Authors = authors
+			case "zhdk_bereich:institutional_affiliation":
+				groups, err := c.getGroups(metaDatumStr)
+				if err != nil {
+					return nil, err
+				}
+
+				metaData.Affiliation = groups
+			default:
+				return nil, errors.Wrap(ErrUnhandledMetaDatum, fmt.Sprintf("%s: %s", typ, metaKey))
 			}
 		default:
 			return nil, errors.Wrap(ErrUnhandledMetaDatumType, typ)
@@ -330,23 +317,80 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 	return metaData, err
 }
 
-func (c *Client) getNameOfPerson(id string) (string, error) {
+func (c *Client) getAuthors(metaDatum string) ([]*Author, error) {
+	var authors []*Author
+
+	for _, item := range gjson.Get(metaDatum, "value.#.id").Array() {
+		author, err := c.getAuthor(item.Str)
+		if err != nil {
+			return nil, err
+		}
+
+		authors = append(authors, author)
+	}
+
+	return authors, nil
+}
+
+func (c *Client) getAuthor(id string) (*Author, error) {
 	c.shortLock.Lock()
 	defer c.shortLock.Unlock()
 
-	if name, ok := c.peopleCache[id]; ok {
-		return name, nil
+	if author, ok := c.authorCache[id]; ok {
+		return author, nil
 	}
 
 	personStr, err := c.Fetch(c.URL("/api/people/%s", id))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	name := gjson.Get(personStr, "first_name").Str + " " + gjson.Get(personStr, "last_name").Str
-	c.peopleCache[id] = name
+	author := &Author{
+		FirstName: gjson.Get(personStr, "first_name").Str,
+		LastName:  gjson.Get(personStr, "last_name").Str,
+	}
 
-	return name, nil
+	c.authorCache[id] = author
+
+	return author, nil
+}
+
+func (c *Client) getGroups(metaDatum string) ([]*Group, error) {
+	var authors []*Group
+
+	for _, item := range gjson.Get(metaDatum, "value.#.id").Array() {
+		author, err := c.getGroup(item.Str)
+		if err != nil {
+			return nil, err
+		}
+
+		authors = append(authors, author)
+	}
+
+	return authors, nil
+}
+
+func (c *Client) getGroup(id string) (*Group, error) {
+	c.shortLock.Lock()
+	defer c.shortLock.Unlock()
+
+	if group, ok := c.groupCache[id]; ok {
+		return group, nil
+	}
+
+	personStr, err := c.Fetch(c.URL("/api/people/%s", id))
+	if err != nil {
+		return nil, err
+	}
+
+	group := &Group{
+		Name:      gjson.Get(personStr, "last_name").Str,
+		Pseudonym: gjson.Get(personStr, "pseudonym").Str,
+	}
+
+	c.groupCache[id] = group
+
+	return group, nil
 }
 
 func (c *Client) getKeywordTerm(id string) (string, error) {

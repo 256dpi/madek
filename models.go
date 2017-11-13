@@ -13,23 +13,36 @@ var supportedMetaKeys = []string{
 	"madek_core:copyright_notice",
 	"copyright:copyright_usage",
 	"copyright:license",
-	//"zhdk_bereich:institutional_affiliation"
+	"zhdk_bereich:institutional_affiliation",
+}
+
+// Author contains info about an author.
+type Author struct {
+	FirstName string `json:"first_name,omitempty"`
+	LastName  string `json:"last_name,omitempty"`
+}
+
+// Group contains info about a group.
+type Group struct {
+	Name      string `json:"name,omitempty"`
+	Pseudonym string `json:"pseudonym,omitempty"`
 }
 
 // MetaData contains multiple metadata key value pairs.
 type MetaData struct {
-	Title       string   `json:"title,omitempty"`
-	Subtitle    string   `json:"subtitle,omitempty"`
-	Description string   `json:"description,omitempty"`
-	Authors     []string `json:"authors,omitempty"`
-	Keywords    []string `json:"keywords,omitempty"`
-	Genres      []string `json:"genres,omitempty"`
-	Year        string   `json:"year,omitempty"`
+	Title       string    `json:"title,omitempty"`
+	Subtitle    string    `json:"subtitle,omitempty"`
+	Description string    `json:"description,omitempty"`
+	Authors     []*Author `json:"authors,omitempty"`
+	Keywords    []string  `json:"keywords,omitempty"`
+	Genres      []string  `json:"genres,omitempty"`
+	Year        string    `json:"year,omitempty"`
 	Copyright   struct {
 		Holder   string   `json:"holder"`
 		Usage    string   `json:"usage"`
 		Licenses []string `json:"licenses"`
 	} `json:"copyright,omitempty"`
+	Affiliation []*Group `json:"affiliation,omitempty"`
 }
 
 // A Collection contains multiple media entries.
