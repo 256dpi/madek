@@ -415,3 +415,13 @@ func (c *Client) Fetch(url string) (string, error) {
 		return "", errors.Wrap(ErrRequestFailed, url)
 	}
 }
+
+func stringInList(list []string, str string) bool {
+	for _, item := range list {
+		if item == str {
+			return true
+		}
+	}
+
+	return false
+}
