@@ -27,14 +27,14 @@ Options:
 
 ## Data Format
 
-```json
+```js
 {
   "id": "82108639-c4a6-412d-b347-341fe5284caa",
   "created_at": "2016-05-25T09:46:40.533Z",
   "meta_data": {
     "title": "Meduza",
-    "subtitle": "MEDUZA is part of the installation that emerged under the theme Strange Garden in the module Spatial Interaction.",
-    "description": "The installation invites the viewer to discover a whole new relation between light, space and movement. [...]",
+    "subtitle": "MEDUZA is part of the installation that emerged under the ...",
+    "description": "The installation invites the viewer to discover a whole ...",
     "authors": [
       {
         "first_name": "Thomas",
@@ -78,7 +78,7 @@ Options:
         ],
         "copyright": {
           "holder": "Interaction Design",
-          "usage": "Das Werk darf nur mit Einwilligung des Autors/Rechteinhabers weiter verwendet werden.",
+          "usage": "Das Werk darf nur mit Einwilligung des Autors ...",
           "licenses": [
             "Alle Rechte vorbehalten"
           ]
