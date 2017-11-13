@@ -232,14 +232,14 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 	metaData := &MetaData{}
 
 	for _, metaDatum := range gjson.Get(metaDataStr, "meta-data").Array() {
-		mid := metaDatum.Get("id").Str
-		mkey := metaDatum.Get("meta_key_id").Str
+		metaID := metaDatum.Get("id").Str
+		metaKey := metaDatum.Get("meta_key_id").Str
 
-		if !stringInList(supportedMetaKeys, mkey) {
+		if !stringInList(supportedMetaKeys, metaKey) {
 			continue
 		}
 
-		metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", mid))
+		metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", metaID))
 		if err != nil {
 			return nil, err
 		}
@@ -250,7 +250,7 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 		case "MetaDatum::Text", "MetaDatum::TextDate":
 			strValue := gjson.Get(metaDatumStr, "value").Str
 
-			switch mkey {
+			switch metaKey {
 			case "madek_core:title":
 				metaData.Title = strValue
 			case "madek_core:subtitle":
@@ -264,7 +264,7 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 			case "copyright:copyright_usage":
 				metaData.Copyright.Usage = strValue
 			default:
-				return nil, errors.Wrap(ErrUnhandledMetaDatum, mkey)
+				return nil, errors.Wrap(ErrUnhandledMetaDatum, metaKey)
 			}
 		case "MetaDatum::Keywords":
 			var list []string
@@ -278,13 +278,13 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 				list = append(list, name)
 			}
 
-			switch mkey {
+			switch metaKey {
 			case "madek_core:keywords":
 				metaData.Keywords = list
 			case "media_content:type":
 				metaData.Genres = list
 			default:
-				return nil, errors.Wrap(ErrUnhandledMetaDatum, mkey)
+				return nil, errors.Wrap(ErrUnhandledMetaDatum, metaKey)
 			}
 		case "MetaDatum::People":
 			var list []string
@@ -298,11 +298,11 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 				list = append(list, name)
 			}
 
-			switch mkey {
+			switch metaKey {
 			case "madek_core:authors":
 				metaData.Authors = list
 			default:
-				return nil, errors.Wrap(ErrUnhandledMetaDatum, mkey)
+				return nil, errors.Wrap(ErrUnhandledMetaDatum, metaKey)
 			}
 		case "MetaDatum::Licenses":
 			var list []string
@@ -316,11 +316,11 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 				list = append(list, name)
 			}
 
-			switch mkey {
+			switch metaKey {
 			case "copyright:license":
 				metaData.Copyright.Licenses = list
 			default:
-				return nil, errors.Wrap(ErrUnhandledMetaDatum, mkey)
+				return nil, errors.Wrap(ErrUnhandledMetaDatum, metaKey)
 			}
 		default:
 			return nil, errors.Wrap(ErrUnhandledMetaDatumType, typ)
