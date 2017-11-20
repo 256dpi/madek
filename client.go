@@ -1,13 +1,13 @@
 package madek
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/parnurzeal/gorequest"
-	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 )
 
@@ -23,14 +23,6 @@ var ErrRequestFailed = errors.New("request failed")
 
 // ErrNotFound is returned when the requested resource ist not found.
 var ErrNotFound = errors.New("not found")
-
-// ErrUnhandledMetaDatum is returned when a received meta datum has not been
-// handled.
-var ErrUnhandledMetaDatum = errors.New("unhandled meta datum")
-
-// ErrUnhandledMetaDatumType is returned when a fetched meta datum has not
-// been handled.
-var ErrUnhandledMetaDatumType = errors.New("unhandled meta datum type")
 
 // A Client is used to request data from the Madek API.
 type Client struct {
@@ -266,7 +258,7 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 			case "copyright:copyright_usage":
 				metaData.Copyright.Usage = strValue
 			default:
-				return nil, errors.Wrap(ErrUnhandledMetaDatum, fmt.Sprintf("%s: %s", typ, metaKey))
+				return nil, fmt.Errorf("unhandled meta datum: %s: %s", typ, metaKey)
 			}
 		case "MetaDatum::Keywords":
 			var list []string
@@ -288,7 +280,7 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 			case "copyright:license":
 				metaData.Copyright.Licenses = list
 			default:
-				return nil, errors.Wrap(ErrUnhandledMetaDatum, fmt.Sprintf("%s: %s", typ, metaKey))
+				return nil, fmt.Errorf("unhandled meta datum: %s: %s", typ, metaKey)
 			}
 		case "MetaDatum::People":
 			switch metaKey {
@@ -307,10 +299,10 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 
 				metaData.Affiliation = groups
 			default:
-				return nil, errors.Wrap(ErrUnhandledMetaDatum, fmt.Sprintf("%s: %s", typ, metaKey))
+				return nil, fmt.Errorf("unhandled meta datum: %s: %s", typ, metaKey)
 			}
 		default:
-			return nil, errors.Wrap(ErrUnhandledMetaDatumType, typ)
+			return nil, fmt.Errorf("unhandled meta datum: %s: %s", typ, metaKey)
 		}
 	}
 
@@ -443,20 +435,20 @@ func (c *Client) Fetch(url string) (string, error) {
 		End()
 
 	if len(err) > 0 {
-		return "", errors.Wrap(err[0], url)
+		return "", err[0]
 	}
 
 	switch res.StatusCode {
 	case http.StatusUnauthorized:
-		return "", errors.Wrap(ErrInvalidAuthentication, url)
+		return "", ErrInvalidAuthentication
 	case http.StatusForbidden:
-		return "", errors.Wrap(ErrAccessForbidden, url)
+		return "", ErrAccessForbidden
 	case http.StatusNotFound:
-		return "", errors.Wrap(ErrNotFound, url)
+		return "", ErrNotFound
 	case http.StatusOK:
 		return str, nil
 	default:
-		return "", errors.Wrap(ErrRequestFailed, url)
+		return "", ErrRequestFailed
 	}
 }
 
