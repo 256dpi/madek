@@ -11,6 +11,8 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// TODO: Remove gorequest dependency.
+
 // ErrInvalidAuthentication is returned when the supplied authentication
 // credentials have been rejected.
 var ErrInvalidAuthentication = errors.New("invalid authentication")
