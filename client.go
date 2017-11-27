@@ -3,15 +3,13 @@ package madek
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/parnurzeal/gorequest"
 	"github.com/tidwall/gjson"
 )
-
-// TODO: Remove gorequest dependency.
 
 // ErrInvalidAuthentication is returned when the supplied authentication
 // credentials have been rejected.
@@ -28,6 +26,8 @@ var ErrNotFound = errors.New("not found")
 
 // A Client is used to request data from the Madek API.
 type Client struct {
+	client http.Client
+
 	Address     string
 	Username    string
 	Password    string
@@ -340,7 +340,7 @@ func (c *Client) getAuthor(id string) (*Author, error) {
 	}
 
 	author := &Author{
-		ID: gjson.Get(personStr, "id").Str,
+		ID:        gjson.Get(personStr, "id").Str,
 		FirstName: gjson.Get(personStr, "first_name").Str,
 		LastName:  gjson.Get(personStr, "last_name").Str,
 	}
@@ -379,7 +379,7 @@ func (c *Client) getGroup(id string) (*Group, error) {
 	}
 
 	group := &Group{
-		ID: gjson.Get(groupStr, "id").Str,
+		ID:        gjson.Get(groupStr, "id").Str,
 		Name:      gjson.Get(groupStr, "last_name").Str,
 		Pseudonym: gjson.Get(groupStr, "pseudonym").Str,
 	}
@@ -433,13 +433,22 @@ func (c *Client) Fetch(url string) (string, error) {
 		println("Fetching: " + url)
 	}
 
-	res, str, err := gorequest.New().Get(url).
-		SetBasicAuth(c.Username, c.Password).
-		Set("Accept", "application/json-roa+json").
-		End()
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
 
-	if len(err) > 0 {
-		return "", err[0]
+	req.SetBasicAuth(c.Username, c.Password)
+	req.Header.Set("Accept", "application/json-roa+json")
+
+	res, err := c.client.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
 	}
 
 	switch res.StatusCode {
@@ -450,7 +459,7 @@ func (c *Client) Fetch(url string) (string, error) {
 	case http.StatusNotFound:
 		return "", ErrNotFound
 	case http.StatusOK:
-		return str, nil
+		return string(bytes), nil
 	default:
 		return "", ErrRequestFailed
 	}
