@@ -18,12 +18,14 @@ var supportedMetaKeys = []string{
 
 // Author contains info about an author.
 type Author struct {
+	ID        string `json:"id,omitempty"`
 	FirstName string `json:"first_name,omitempty"`
 	LastName  string `json:"last_name,omitempty"`
 }
 
 // Group contains info about a group.
 type Group struct {
+	ID        string `json:"id,omitempty"`
 	Name      string `json:"name,omitempty"`
 	Pseudonym string `json:"pseudonym,omitempty"`
 }

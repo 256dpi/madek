@@ -340,6 +340,7 @@ func (c *Client) getAuthor(id string) (*Author, error) {
 	}
 
 	author := &Author{
+		ID: gjson.Get(personStr, "id").Str,
 		FirstName: gjson.Get(personStr, "first_name").Str,
 		LastName:  gjson.Get(personStr, "last_name").Str,
 	}
@@ -372,14 +373,15 @@ func (c *Client) getGroup(id string) (*Group, error) {
 		return group, nil
 	}
 
-	personStr, err := c.Fetch(c.URL("/api/people/%s", id))
+	groupStr, err := c.Fetch(c.URL("/api/people/%s", id))
 	if err != nil {
 		return nil, err
 	}
 
 	group := &Group{
-		Name:      gjson.Get(personStr, "last_name").Str,
-		Pseudonym: gjson.Get(personStr, "pseudonym").Str,
+		ID: gjson.Get(groupStr, "id").Str,
+		Name:      gjson.Get(groupStr, "last_name").Str,
+		Pseudonym: gjson.Get(groupStr, "pseudonym").Str,
 	}
 
 	c.groupCache[id] = group
