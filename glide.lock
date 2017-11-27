@@ -1,33 +1,12 @@
-hash: da483877be17d2d0a57a1939a6d4d7fa65f3958edee5d201e60d5c151c50b12c
-updated: 2017-11-27T10:59:56.126626135+01:00
+hash: 894e30a0698a74e87e13bc9410cae7890021163432e69b420ce7e16bcd057450
+updated: 2017-11-27T11:10:32.944865468+01:00
 imports:
 - name: github.com/docopt/docopt-go
   version: 784ddc588536785e7299f7272f39101f7faccc3f
-- name: github.com/gin-gonic/gin
-  version: 5caaac4c5c712a9e7a7de29e6c24ef46c753017f
-  subpackages:
-  - binding
-  - render
-- name: github.com/golang/protobuf
-  version: 2402d76f3d41f928c7902a765dfc872356dd3aad
-  subpackages:
-  - proto
-- name: github.com/manucorporat/sse
-  version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/patrickmn/go-cache
   version: a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0
-- name: github.com/pkg/errors
-  version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/tidwall/gjson
   version: 5a69e67cfd8f6f9b0044ed49f5079d0eeed28653
 - name: github.com/tidwall/match
   version: 173748da739a410c5b0b813b956f89ff94730b4c
-- name: golang.org/x/net
-  version: f315505cf3349909cdf013ea56690da34e96a451
-  subpackages:
-  - context
-- name: gopkg.in/go-playground/validator.v8
-  version: c193cecd124b5cc722d7ee5538e945bdb3348435
-- name: gopkg.in/yaml.v2
-  version: e4d366fc3c7938e2958e662b4258c7a89e1f0e3e
 testImports: []

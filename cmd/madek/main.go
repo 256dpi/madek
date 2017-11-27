@@ -2,12 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
+	"strings"
 	"fmt"
 	"net/http"
 
 	"github.com/IAD-ZHDK/madek"
-	"github.com/gin-gonic/gin"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -40,38 +39,56 @@ func fetch(client *madek.Client, id string) {
 }
 
 func server(client *madek.Client, cacheEnabled bool) {
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
+	mux := http.NewServeMux()
 
 	requestCache := cache.New(cache.NoExpiration, cache.NoExpiration)
 
-	router.GET("/:id", func(ctx *gin.Context) {
-		id := ctx.Param("id")
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+		// get id
+		id := strings.Trim(r.URL.Path, "/")
 		if id == "" {
-			ctx.AbortWithError(http.StatusBadRequest, errors.New("missing id query parameter"))
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		if ctx.Query("fresh") != "yes" {
+		// prepare coll
+		var collection *madek.Collection
+
+		// read from cache if allowed
+		if cacheEnabled && r.URL.Query().Get("fresh") != "yes" {
 			val, ok := requestCache.Get(id)
 			if ok {
-				ctx.JSON(http.StatusOK, val.(*madek.Collection))
-				return
+				collection = val.(*madek.Collection)
 			}
 		}
 
-		coll, err := client.CompileCollection(id)
+		// fetch not already there
+		if collection == nil {
+			coll, err := client.CompileCollection(id)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			// save in cache if allowed
+			if cacheEnabled {
+				requestCache.Set(id, coll, cache.NoExpiration)
+			}
+
+			collection = coll
+		}
+
+		// marshal
+		bytes, err := json.Marshal(collection)
 		if err != nil {
-			ctx.AbortWithError(http.StatusInternalServerError, err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		if cacheEnabled {
-			requestCache.Set(id, coll, cache.NoExpiration)
-		}
-
-		ctx.JSON(http.StatusOK, coll)
-	})
+		// write
+		w.WriteHeader(http.StatusOK)
+		w.Write(bytes)
+	}))
 
 	fmt.Println("+------------------------------------------------------------+")
 	fmt.Println("| Running server on http://0.0.0.0:8080...                   |")
@@ -79,5 +96,5 @@ func server(client *madek.Client, cacheEnabled bool) {
 	fmt.Println("| > http://0.0.0.0:8080/82108639-c4a6-412d-b347-341fe5284caa |")
 	fmt.Println("+------------------------------------------------------------+")
 
-	router.Run("0.0.0.0:8080")
+	http.ListenAndServe("0.0.0.0:8080", mux)
 }
