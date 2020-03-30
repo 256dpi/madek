@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"strings"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/IAD-ZHDK/madek"
 	"github.com/patrickmn/go-cache"
@@ -43,7 +43,7 @@ func server(client *madek.Client, cacheEnabled bool) {
 
 	requestCache := cache.New(cache.NoExpiration, cache.NoExpiration)
 
-	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// get id
 		id := strings.Trim(r.URL.Path, "/")
 		if id == "" {
