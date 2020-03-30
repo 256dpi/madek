@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/IAD-ZHDK/madek"
 	"github.com/patrickmn/go-cache"
+
+	"github.com/IAD-ZHDK/madek"
 )
 
 func main() {
@@ -87,7 +88,7 @@ func server(client *madek.Client, cacheEnabled bool) {
 
 		// write
 		w.WriteHeader(http.StatusOK)
-		w.Write(bytes)
+		_, _ = w.Write(bytes)
 	}))
 
 	fmt.Println("+------------------------------------------------------------+")
@@ -96,5 +97,5 @@ func server(client *madek.Client, cacheEnabled bool) {
 	fmt.Println("| > http://0.0.0.0:8080/82108639-c4a6-412d-b347-341fe5284caa |")
 	fmt.Println("+------------------------------------------------------------+")
 
-	http.ListenAndServe("0.0.0.0:8080", mux)
+	_ = http.ListenAndServe("0.0.0.0:8080", mux)
 }

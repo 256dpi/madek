@@ -11,3 +11,6 @@ lint:
 
 test:
 	go test ./...
+
+install:
+	go install ./cmd/madek
