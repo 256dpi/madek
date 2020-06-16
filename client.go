@@ -26,27 +26,23 @@ var ErrNotFound = errors.New("not found")
 
 // A Client is used to request data from the Madek API.
 type Client struct {
-	client http.Client
-
-	Address     string
-	Username    string
-	Password    string
-	LogRequests bool
-
+	client       http.Client
+	address      string
+	username     string
+	password     string
 	authorCache  map[string]*Author
 	groupCache   map[string]*Group
 	keywordCache map[string]string
 	licenseCache map[string]string
-
-	shortLock sync.Mutex
+	mutex        sync.Mutex
 }
 
 // NewClient will create and return a new Client.
 func NewClient(address, username, password string) *Client {
 	return &Client{
-		Address:      address,
-		Username:     username,
-		Password:     password,
+		address:      address,
+		username:     username,
+		password:     password,
 		authorCache:  make(map[string]*Author),
 		groupCache:   make(map[string]*Group),
 		keywordCache: make(map[string]string),
@@ -56,7 +52,7 @@ func NewClient(address, username, password string) *Client {
 
 // URL appends the passed format to the Madek address.
 func (c *Client) URL(format string, args ...interface{}) string {
-	args = append([]interface{}{c.Address}, args...)
+	args = append([]interface{}{c.address}, args...)
 	return fmt.Sprintf("%s"+format, args...)
 }
 
@@ -327,8 +323,8 @@ func (c *Client) getAuthors(metaDatum string) ([]*Author, error) {
 }
 
 func (c *Client) getAuthor(id string) (*Author, error) {
-	c.shortLock.Lock()
-	defer c.shortLock.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	if author, ok := c.authorCache[id]; ok {
 		return author, nil
@@ -366,8 +362,8 @@ func (c *Client) getGroups(metaDatum string) ([]*Group, error) {
 }
 
 func (c *Client) getGroup(id string) (*Group, error) {
-	c.shortLock.Lock()
-	defer c.shortLock.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	if group, ok := c.groupCache[id]; ok {
 		return group, nil
@@ -390,8 +386,8 @@ func (c *Client) getGroup(id string) (*Group, error) {
 }
 
 func (c *Client) getKeywordTerm(id string) (string, error) {
-	c.shortLock.Lock()
-	defer c.shortLock.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	if term, ok := c.keywordCache[id]; ok {
 		return term, nil
@@ -409,8 +405,8 @@ func (c *Client) getKeywordTerm(id string) (string, error) {
 }
 
 func (c *Client) getLicenseLabel(id string) (string, error) {
-	c.shortLock.Lock()
-	defer c.shortLock.Unlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 
 	if label, ok := c.licenseCache[id]; ok {
 		return label, nil
@@ -429,16 +425,12 @@ func (c *Client) getLicenseLabel(id string) (string, error) {
 
 // Fetch will request the passed URL from Madek.
 func (c *Client) Fetch(url string) (string, error) {
-	if c.LogRequests {
-		println("Fetching: " + url)
-	}
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 
-	req.SetBasicAuth(c.Username, c.Password)
+	req.SetBasicAuth(c.username, c.password)
 	req.Header.Set("Accept", "application/json-roa+json")
 
 	res, err := c.client.Do(req)

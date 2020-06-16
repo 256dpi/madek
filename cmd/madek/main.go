@@ -15,7 +15,6 @@ func main() {
 	cmd := parseCommand()
 
 	client := madek.NewClient(cmd.oAddress, cmd.oUsername, cmd.oPassword)
-	client.LogRequests = true
 
 	if cmd.cFetch {
 		fetch(client, cmd.aID)
