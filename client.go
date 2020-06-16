@@ -50,85 +50,91 @@ func NewClient(address, username, password string) *Client {
 	}
 }
 
-// URL appends the passed format to the Madek address.
-func (c *Client) URL(format string, args ...interface{}) string {
-	args = append([]interface{}{c.address}, args...)
-	return fmt.Sprintf("%s"+format, args...)
-}
-
 // CompileCollection will fully compile a collection with all available data
 // from the API.
 func (c *Client) CompileCollection(id string) (*Collection, error) {
+	// fetch collection
 	collStr, err := c.Fetch(c.URL("/api/collections/%s", id))
 	if err != nil {
 		return nil, err
 	}
 
+	// parse time
 	createdAt, err := time.Parse(time.RFC3339, gjson.Get(collStr, "created_at").Str)
 	if err != nil {
 		return nil, err
 	}
 
+	// prepare collection
 	coll := &Collection{
 		ID:        id,
 		CreatedAt: createdAt,
 	}
 
-	metaData, err := c.compileMetaData(c.URL("/api/collections/%s/meta-data/", id))
+	// fetch meta data
+	coll.MetaData, err = c.compileMetaData(c.URL("/api/collections/%s/meta-data/", id))
 	if err != nil {
 		return nil, err
 	}
 
-	coll.MetaData = metaData
-
+	// prepare media entries
 	var mediaEntryIds []string
 
-	var page = 0
-	for {
+	// fetch all media entries
+	for page := 0; ; page++ {
+		// fetch media entry
 		mediaEntriesStr, err := c.Fetch(c.URL("/api/media-entries/?collection_id=%s&page=%d", id, page))
 		if err != nil {
 			return nil, err
 		}
 
+		// append ids
 		for _, id := range gjson.Get(mediaEntriesStr, "media-entries.#.id").Array() {
 			mediaEntryIds = append(mediaEntryIds, id.Str)
 		}
 
+		// check if there is a next page
 		if !gjson.Get(mediaEntriesStr, "_json-roa.collection.next").Exists() {
 			break
 		}
-
-		page++
 	}
 
+	// prepare wait group
 	var wg sync.WaitGroup
-
-	asyncErrors := make(chan error, len(mediaEntryIds))
-	mediaEntries := make(chan *MediaEntry, len(mediaEntryIds))
 	wg.Add(len(mediaEntryIds))
 
+	// prepare result
+	asyncErrors := make(chan error, len(mediaEntryIds))
+	mediaEntries := make(chan *MediaEntry, len(mediaEntryIds))
+
+	// compile media entries concurrently
 	for _, entryID := range mediaEntryIds {
 		go func(id string) {
 			defer wg.Done()
 
+			// compile media entry
 			mediaEntry, err := c.CompileMediaEntry(id)
 			if err != nil {
 				asyncErrors <- err
 				return
 			}
 
+			// send media entry
 			mediaEntries <- mediaEntry
 		}(entryID)
 	}
 
+	// await done
 	wg.Wait()
 	close(asyncErrors)
 	close(mediaEntries)
 
+	// check errors
 	if len(asyncErrors) > 0 {
 		return nil, <-asyncErrors
 	}
 
+	// collect media entries
 	for mediaEntry := range mediaEntries {
 		coll.MediaEntries = append(coll.MediaEntries, mediaEntry)
 	}
@@ -138,56 +144,66 @@ func (c *Client) CompileCollection(id string) (*Collection, error) {
 
 // CompileMediaEntry will fully compile a media entry with all available data from the API.
 func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
+	// fetch media entry
 	mediaEntryStr, err := c.Fetch(c.URL("/api/media-entries/%s", id))
 	if err != nil {
 		return nil, err
 	}
 
+	// parse time
 	createdAt, err := time.Parse(time.RFC3339, gjson.Get(mediaEntryStr, "created_at").Str)
 	if err != nil {
 		return nil, err
 	}
 
+	// prepare media entry
 	mediaEntry := &MediaEntry{
 		ID:        id,
 		CreatedAt: createdAt,
 	}
 
-	metaData, err := c.compileMetaData(c.URL("/api/media-entries/%s/meta-data/", id))
+	// compile meta data
+	mediaEntry.MetaData, err = c.compileMetaData(c.URL("/api/media-entries/%s/meta-data/", id))
 	if err != nil {
 		return nil, err
 	}
 
-	mediaEntry.MetaData = metaData
-
+	// fetch media file
 	mediaFileStr, err := c.Fetch(c.URL(gjson.Get(mediaEntryStr, "_json-roa.relations.media-file.href").Str))
 	if err != nil {
 		return nil, err
 	}
 
+	// set file infos
 	mediaEntry.FileID = gjson.Get(mediaFileStr, "id").Str
 	mediaEntry.FileName = gjson.Get(mediaFileStr, "filename").Str
 	mediaEntry.StreamURL = c.URL(gjson.Get(mediaFileStr, "_json-roa.relations.data-stream.href").Str)
 	mediaEntry.DownloadURL = c.URL("/files/%s", mediaEntry.FileID)
 
+	// collect previews
 	previewIDs := gjson.Get(mediaFileStr, "previews.#.id").Array()
 
+	// prepare wait group
 	var wg sync.WaitGroup
-
-	asyncErrors := make(chan error, len(previewIDs))
-	previews := make(chan *Preview, len(previewIDs))
 	wg.Add(len(previewIDs))
 
+	// prepare result
+	asyncErrors := make(chan error, len(previewIDs))
+	previews := make(chan *Preview, len(previewIDs))
+
+	// fetch previews concurrently
 	for _, previewID := range previewIDs {
 		go func(pid string) {
 			defer wg.Done()
 
+			// fetch preview
 			previewStr, err := c.Fetch(c.URL("/api/previews/%s", pid))
 			if err != nil {
 				asyncErrors <- err
 				return
 			}
 
+			// send preview
 			previews <- &Preview{
 				ID:          pid,
 				Type:        gjson.Get(previewStr, "media_type").Str,
@@ -200,14 +216,17 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 		}(previewID.Str)
 	}
 
+	// await done
 	wg.Wait()
 	close(asyncErrors)
 	close(previews)
 
+	// check errors
 	if len(asyncErrors) > 0 {
 		return nil, <-asyncErrors
 	}
 
+	// collect previews
 	for preview := range previews {
 		mediaEntry.Previews = append(mediaEntry.Previews, preview)
 	}
@@ -216,32 +235,39 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 }
 
 func (c *Client) compileMetaData(url string) (*MetaData, error) {
+	// fetch meta data
 	metaDataStr, err := c.Fetch(url)
 	if err != nil {
 		return nil, err
 	}
 
+	// prepare meta data
 	metaData := &MetaData{}
 
+	// parse all meta datum
 	for _, metaDatum := range gjson.Get(metaDataStr, "meta-data").Array() {
+		// get id and key
 		metaID := metaDatum.Get("id").Str
 		metaKey := metaDatum.Get("meta_key_id").Str
 
+		// continue if not supported
 		if !stringInList(supportedMetaKeys, metaKey) {
 			continue
 		}
 
+		// fetch meta datum
 		metaDatumStr, err := c.Fetch(c.URL("/api/meta-data/%s", metaID))
 		if err != nil {
 			return nil, err
 		}
 
+		// get type
 		typ := gjson.Get(metaDatumStr, "type").Str
 
+		// handle according to type
 		switch typ {
 		case "MetaDatum::Text", "MetaDatum::TextDate":
 			strValue := gjson.Get(metaDatumStr, "value").Str
-
 			switch metaKey {
 			case "madek_core:title":
 				metaData.Title = strValue
@@ -260,13 +286,11 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 			}
 		case "MetaDatum::Keywords":
 			var list []string
-
 			for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
 				name, err := c.getKeywordTerm(item.Str)
 				if err != nil {
 					return nil, err
 				}
-
 				list = append(list, name)
 			}
 
@@ -308,14 +332,13 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 }
 
 func (c *Client) getAuthors(metaDatum string) ([]*Author, error) {
+	// fetch authors
 	var authors []*Author
-
 	for _, item := range gjson.Get(metaDatum, "value.#.id").Array() {
 		author, err := c.getAuthor(item.Str)
 		if err != nil {
 			return nil, err
 		}
-
 		authors = append(authors, author)
 	}
 
@@ -323,126 +346,157 @@ func (c *Client) getAuthors(metaDatum string) ([]*Author, error) {
 }
 
 func (c *Client) getAuthor(id string) (*Author, error) {
+	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
+	// check cache
 	if author, ok := c.authorCache[id]; ok {
 		return author, nil
 	}
 
-	personStr, err := c.Fetch(c.URL("/api/people/%s", id))
+	// fetch person
+	person, err := c.Fetch(c.URL("/api/people/%s", id))
 	if err != nil {
 		return nil, err
 	}
 
+	// prepare author
 	author := &Author{
-		ID:        gjson.Get(personStr, "id").Str,
-		FirstName: gjson.Get(personStr, "first_name").Str,
-		LastName:  gjson.Get(personStr, "last_name").Str,
+		ID:        gjson.Get(person, "id").Str,
+		FirstName: gjson.Get(person, "first_name").Str,
+		LastName:  gjson.Get(person, "last_name").Str,
 	}
 
+	// cache author
 	c.authorCache[id] = author
 
 	return author, nil
 }
 
 func (c *Client) getGroups(metaDatum string) ([]*Group, error) {
-	var authors []*Group
-
+	// fetch groups
+	var groups []*Group
 	for _, item := range gjson.Get(metaDatum, "value.#.id").Array() {
 		author, err := c.getGroup(item.Str)
 		if err != nil {
 			return nil, err
 		}
-
-		authors = append(authors, author)
+		groups = append(groups, author)
 	}
 
-	return authors, nil
+	return groups, nil
 }
 
 func (c *Client) getGroup(id string) (*Group, error) {
+	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
+	// check cache
 	if group, ok := c.groupCache[id]; ok {
 		return group, nil
 	}
 
+	// fetch group
 	groupStr, err := c.Fetch(c.URL("/api/people/%s", id))
 	if err != nil {
 		return nil, err
 	}
 
+	// prepare group
 	group := &Group{
 		ID:        gjson.Get(groupStr, "id").Str,
 		Name:      gjson.Get(groupStr, "last_name").Str,
 		Pseudonym: gjson.Get(groupStr, "pseudonym").Str,
 	}
 
+	// cache group
 	c.groupCache[id] = group
 
 	return group, nil
 }
 
 func (c *Client) getKeywordTerm(id string) (string, error) {
+	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
+	// check cache
 	if term, ok := c.keywordCache[id]; ok {
 		return term, nil
 	}
 
-	keywordStr, err := c.Fetch(c.URL("/api/keywords/%s", id))
+	// fetch keyword
+	keyword, err := c.Fetch(c.URL("/api/keywords/%s", id))
 	if err != nil {
 		return "", err
 	}
 
-	term := gjson.Get(keywordStr, "term").Str
+	// get term
+	term := gjson.Get(keyword, "term").Str
 	c.keywordCache[id] = term
 
 	return term, nil
 }
 
 func (c *Client) getLicenseLabel(id string) (string, error) {
+	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
+	// check cache
 	if label, ok := c.licenseCache[id]; ok {
 		return label, nil
 	}
 
-	licenseStr, err := c.Fetch(c.URL("/api/licenses/%s", id))
+	// fetch license
+	license, err := c.Fetch(c.URL("/api/licenses/%s", id))
 	if err != nil {
 		return "", err
 	}
 
-	label := gjson.Get(licenseStr, "label").Str
+	// get label
+	label := gjson.Get(license, "label").Str
 	c.licenseCache[id] = label
 
 	return label, nil
 }
 
-// Fetch will request the passed URL from Madek.
+// URL appends the passed format to the Madek address.
+func (c *Client) URL(format string, args ...interface{}) string {
+	args = append([]interface{}{c.address}, args...)
+	return fmt.Sprintf("%s"+format, args...)
+}
+
+// Fetch will request the specified URL from Madek.
 func (c *Client) Fetch(url string) (string, error) {
+	// prepare request
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err
 	}
 
+	// set headers
 	req.SetBasicAuth(c.username, c.password)
 	req.Header.Set("Accept", "application/json-roa+json")
 
+	// perform request
 	res, err := c.client.Do(req)
 	if err != nil {
 		return "", err
 	}
 
+	// ensure body close
+	defer res.Body.Close()
+
+	// read body
 	bytes, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return "", err
 	}
 
+	// check status code
 	switch res.StatusCode {
 	case http.StatusUnauthorized:
 		return "", ErrInvalidAuthentication
