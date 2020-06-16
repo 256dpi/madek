@@ -72,7 +72,7 @@ func (c *Client) CompileCollection(id string) (*Collection, error) {
 	}
 
 	// fetch meta data
-	coll.MetaData, err = c.compileMetaData(c.URL("/api/collections/%s/meta-data/", id))
+	coll.MetaData, err = c.CompileMetaData(c.URL("/api/collections/%s/meta-data/", id))
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,8 @@ func (c *Client) CompileCollection(id string) (*Collection, error) {
 	return coll, nil
 }
 
-// CompileMediaEntry will fully compile a media entry with all available data from the API.
+// CompileMediaEntry will fully compile a media entry with all available data
+// from the API.
 func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 	// fetch media entry
 	mediaEntryStr, err := c.Fetch(c.URL("/api/media-entries/%s", id))
@@ -163,7 +164,7 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 	}
 
 	// compile meta data
-	mediaEntry.MetaData, err = c.compileMetaData(c.URL("/api/media-entries/%s/meta-data/", id))
+	mediaEntry.MetaData, err = c.CompileMetaData(c.URL("/api/media-entries/%s/meta-data/", id))
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +235,8 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 	return mediaEntry, nil
 }
 
-func (c *Client) compileMetaData(url string) (*MetaData, error) {
+// CompileMetaData will compile the metadata found at the specified url.
+func (c *Client) CompileMetaData(url string) (*MetaData, error) {
 	// fetch meta data
 	metaDataStr, err := c.Fetch(url)
 	if err != nil {
@@ -287,7 +289,7 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 		case "MetaDatum::Keywords":
 			var list []string
 			for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
-				name, err := c.getKeywordTerm(item.Str)
+				name, err := c.GetKeywordTerm(item.Str)
 				if err != nil {
 					return nil, err
 				}
@@ -307,19 +309,22 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 		case "MetaDatum::People":
 			switch metaKey {
 			case "madek_core:authors":
-				authors, err := c.getAuthors(metaDatumStr)
-				if err != nil {
-					return nil, err
+				// fetch authors
+				for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
+					author, err := c.GetAuthor(item.Str)
+					if err != nil {
+						return nil, err
+					}
+					metaData.Authors = append(metaData.Authors, author)
 				}
-
-				metaData.Authors = authors
 			case "zhdk_bereich:institutional_affiliation":
-				groups, err := c.getGroups(metaDatumStr)
-				if err != nil {
-					return nil, err
+				for _, item := range gjson.Get(metaDatumStr, "value.#.id").Array() {
+					group, err := c.GetGroup(item.Str)
+					if err != nil {
+						return nil, err
+					}
+					metaData.Affiliation = append(metaData.Affiliation, group)
 				}
-
-				metaData.Affiliation = groups
 			default:
 				return nil, fmt.Errorf("unhandled meta datum: %s: %s", typ, metaKey)
 			}
@@ -331,21 +336,8 @@ func (c *Client) compileMetaData(url string) (*MetaData, error) {
 	return metaData, err
 }
 
-func (c *Client) getAuthors(metaDatum string) ([]*Author, error) {
-	// fetch authors
-	var authors []*Author
-	for _, item := range gjson.Get(metaDatum, "value.#.id").Array() {
-		author, err := c.getAuthor(item.Str)
-		if err != nil {
-			return nil, err
-		}
-		authors = append(authors, author)
-	}
-
-	return authors, nil
-}
-
-func (c *Client) getAuthor(id string) (*Author, error) {
+// GetAuthor will find the author with the provided id.
+func (c *Client) GetAuthor(id string) (*Author, error) {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -374,21 +366,8 @@ func (c *Client) getAuthor(id string) (*Author, error) {
 	return author, nil
 }
 
-func (c *Client) getGroups(metaDatum string) ([]*Group, error) {
-	// fetch groups
-	var groups []*Group
-	for _, item := range gjson.Get(metaDatum, "value.#.id").Array() {
-		author, err := c.getGroup(item.Str)
-		if err != nil {
-			return nil, err
-		}
-		groups = append(groups, author)
-	}
-
-	return groups, nil
-}
-
-func (c *Client) getGroup(id string) (*Group, error) {
+// GetGroup will find the group with the provided id.
+func (c *Client) GetGroup(id string) (*Group, error) {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -417,7 +396,8 @@ func (c *Client) getGroup(id string) (*Group, error) {
 	return group, nil
 }
 
-func (c *Client) getKeywordTerm(id string) (string, error) {
+// GetKeywordTerm will find the term for the provided keyword id.
+func (c *Client) GetKeywordTerm(id string) (string, error) {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
@@ -440,7 +420,8 @@ func (c *Client) getKeywordTerm(id string) (string, error) {
 	return term, nil
 }
 
-func (c *Client) getLicenseLabel(id string) (string, error) {
+// GetLicenseLabel will find the label for the provided license id.
+func (c *Client) GetLicenseLabel(id string) (string, error) {
 	// acquire mutex
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
