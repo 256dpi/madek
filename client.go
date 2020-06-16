@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -139,6 +140,11 @@ func (c *Client) CompileCollection(id string) (*Collection, error) {
 		coll.MediaEntries = append(coll.MediaEntries, mediaEntry)
 	}
 
+	// sort media entries
+	sort.Slice(coll.MediaEntries, func(i, j int) bool {
+		return coll.MediaEntries[i].ID < coll.MediaEntries[j].ID
+	})
+
 	return coll, nil
 }
 
@@ -231,6 +237,11 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 	for preview := range previews {
 		mediaEntry.Previews = append(mediaEntry.Previews, preview)
 	}
+
+	// sort previews
+	sort.Slice(mediaEntry.Previews, func(i, j int) bool {
+		return mediaEntry.Previews[i].ID < mediaEntry.Previews[j].ID
+	})
 
 	return mediaEntry, nil
 }
@@ -332,6 +343,20 @@ func (c *Client) CompileMetaData(url string) (*MetaData, error) {
 			return nil, fmt.Errorf("unhandled meta datum: %s: %s", typ, metaKey)
 		}
 	}
+
+	// sort authors
+	sort.Slice(metaData.Authors, func(i, j int) bool {
+		return metaData.Authors[i].ID < metaData.Authors[j].ID
+	})
+
+	// sort keywords
+	sort.Strings(metaData.Keywords)
+	sort.Strings(metaData.Genres)
+
+	// sort affiliation
+	sort.Slice(metaData.Affiliation, func(i, j int) bool {
+		return metaData.Affiliation[i].ID < metaData.Affiliation[j].ID
+	})
 
 	return metaData, err
 }
