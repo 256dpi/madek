@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/IAD-ZHDK/madek"
+	"github.com/256dpi/madek"
 )
 
 var address = flag.String("address", "https://medienarchiv.zhdk.ch", "The address of the Madek instance.")
