@@ -30,6 +30,13 @@ type Group struct {
 	Pseudonym string `json:"pseudonym,omitempty"`
 }
 
+// Copyright contains copyright infos.
+type Copyright struct {
+	Holder   string   `json:"holder,omitempty"`
+	Usage    string   `json:"usage,omitempty"`
+	Licenses []string `json:"licenses,omitempty"`
+}
+
 // MetaData contains multiple metadata key value pairs.
 type MetaData struct {
 	Title       string    `json:"title,omitempty"`
@@ -39,12 +46,8 @@ type MetaData struct {
 	Keywords    []string  `json:"keywords,omitempty"`
 	Genres      []string  `json:"genres,omitempty"`
 	Year        string    `json:"year,omitempty"`
-	Copyright   struct {
-		Holder   string   `json:"holder"`
-		Usage    string   `json:"usage"`
-		Licenses []string `json:"licenses"`
-	} `json:"copyright,omitempty"`
-	Affiliation []*Group `json:"affiliation,omitempty"`
+	Copyright   Copyright `json:"copyright,omitempty"`
+	Affiliation []*Group  `json:"affiliation,omitempty"`
 }
 
 // A Collection contains multiple media entries.
