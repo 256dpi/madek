@@ -65,6 +65,8 @@ type MediaEntry struct {
 	CreatedAt   time.Time  `json:"created_at"`
 	FileID      string     `json:"file_id"`
 	FileName    string     `json:"file_name"`
+	FileType    string     `json:"file_type"`
+	FileSize    int64      `json:"file_size"`
 	StreamURL   string     `json:"stream_url"`
 	DownloadURL string     `json:"download_url"`
 	Previews    []*Preview `json:"previews"`

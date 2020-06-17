@@ -184,6 +184,8 @@ func (c *Client) CompileMediaEntry(id string) (*MediaEntry, error) {
 	// set file infos
 	mediaEntry.FileID = gjson.Get(mediaFileStr, "id").Str
 	mediaEntry.FileName = gjson.Get(mediaFileStr, "filename").Str
+	mediaEntry.FileType = gjson.Get(mediaFileStr, "content_type").Str
+	mediaEntry.FileSize = gjson.Get(mediaFileStr, "size").Int()
 	mediaEntry.StreamURL = c.URL(gjson.Get(mediaFileStr, "_json-roa.relations.data-stream.href").Str)
 	mediaEntry.DownloadURL = c.URL("/files/%s", mediaEntry.FileID)
 
