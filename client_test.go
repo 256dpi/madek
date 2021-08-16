@@ -59,7 +59,7 @@ func TestClient(t *testing.T) {
 		  },
 		  {
 			"id": "afe0553e-949a-40e2-ae3c-d7dc2b2ca46f",
-			"name": "Vertiefung Interaction Design",
+			"name": "Fachrichtung Interaction Design (BA & MA)",
 			"pseudonym": "DDE_FDE_VIAD.alle"
 		  }
 		]

@@ -1,4 +1,4 @@
-all: fmt vet lint test
+all: fmt vet lint
 
 vet:
 	go vet ./...
@@ -8,9 +8,6 @@ fmt:
 
 lint:
 	golint ./...
-
-test:
-	go test ./...
 
 install:
 	go install ./cmd/madek
