@@ -29,7 +29,7 @@ func TestClient(t *testing.T) {
 
 	assert.JSONEq(t, `{
 	  "id": "82108639-c4a6-412d-b347-341fe5284caa",
-	  "created_at": "2016-05-25T09:46:40.533Z",
+	  "created_at": "2016-05-25T09:46:40.533956Z",
 	  "meta_data": {
 		"title": "Meduza",
 		"subtitle": "MEDUZA is part of the installation that emerged under the theme Strange Garden in the module Spatial Interaction.",
@@ -80,7 +80,7 @@ func TestClient(t *testing.T) {
 			  ]
 			}
 		  },
-		  "created_at": "2016-05-25T09:55:01.052Z",
+		  "created_at": "2016-05-25T09:55:01.052161Z",
 		  "file_id": "644a5f64-ebd6-4d75-a10e-391c87312586",
 		  "file_name": "10_meduza_trough_the_net.jpg",
 	      "file_type": "image/jpeg",
@@ -159,7 +159,7 @@ func TestClient(t *testing.T) {
 			  ]
 			}
 		  },
-		  "created_at": "2016-05-25T10:48:40.157Z",
+		  "created_at": "2016-05-25T10:48:40.157749Z",
 		  "file_id": "da36ebd4-66aa-444f-9441-c55308f9cb3d",
 		  "file_name": "ServoControl.zip",
 	      "file_type": "application/zip",
@@ -183,7 +183,7 @@ func TestClient(t *testing.T) {
 			  ]
 			}
 		  },
-		  "created_at": "2016-05-25T10:49:49.487Z",
+		  "created_at": "2016-05-25T10:49:49.48765Z",
 		  "file_id": "6ca65daf-7ec5-46ab-98a6-d3fff08f18a0",
 		  "file_name": "TH_video.mp4",
 	      "file_type": "video/mp4",
